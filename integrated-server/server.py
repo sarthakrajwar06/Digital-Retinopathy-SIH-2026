@@ -51,7 +51,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 from flask import Flask, request, jsonify, send_from_directory
 
 # --------------------------------------------------------------------------- #
@@ -225,10 +225,9 @@ class DRModelService:
             (0.55 * canvas_np + 0.45 * heat_col).astype("uint8"),
             canvas_np,
         )
-        result_img = self._draw_badge(
-            Image.fromarray(overlay_np, "RGB"),
-            grade, confidence, referable_prob,
-        )
+        # Clean overlay: NO text/grade label is painted on the image itself.
+        # Grade + confidence are shown in the dashboard UI cards instead.
+        result_img = Image.fromarray(overlay_np, "RGB")
 
         classification = {
             "grade": grade,
@@ -246,37 +245,6 @@ class DRModelService:
         g = (np.clip(gray01, 0.0, 1.0) * 255).astype("uint8")
         bgr = cv2.applyColorMap(g, cv2.COLORMAP_JET)
         return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-
-    # ------------------------------------------------------------------ #
-    @staticmethod
-    def _draw_badge(img, grade, confidence, referable_prob):
-        """Put a small clinical-readout strip on the composited image."""
-        size = max(img.size)
-        font_paths = [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        ]
-        font = ImageFont.load_default(size=max(16, size // 12))
-        for fp in font_paths:
-            if os.path.exists(fp):
-                try:
-                    font = ImageFont.truetype(fp, max(16, size // 12))
-                    break
-                except Exception:
-                    pass
-
-        label = ["No DR", "Mild NPDR", "Moderate NPDR", "Severe NPDR", "PDR"][
-            min(4, max(0, grade))
-        ]
-        text = f"DR Grade {grade} - {label}   |   conf {confidence*100:.0f}%   |   referable p={referable_prob*100:.0f}%"
-        draw = ImageDraw.Draw(img)
-        w, h = draw.textlength(text, font=font), font.size
-        pad = max(8, size // 32)
-        x0, y0 = pad, img.size[1] - h - 3 * pad
-        x1, y1 = min(img.size[0] - pad, x0 + w + 2 * pad), y0 + h + 2 * pad
-        draw.rounded_rectangle([x0, y0, x1, y1], radius=pad // 2, fill=(12, 23, 48))
-        draw.text((x0 + pad, y0 + pad), text, fill=(255, 255, 255), font=font)
-        return img
 
     # ------------------------------------------------------------------ #
     @classmethod

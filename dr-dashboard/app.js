@@ -13,7 +13,7 @@
    │ 200 OK → JSON:                                                    │
    │ {                                                                 │
    │   "result_image_url": "https://…/result.png",  // fundus WITH     │
-   │        // Grad-CAM heatmap + grade badge drawn in                  │
+   │        // Grad-CAM heatmap overlay (no text/labels painted on it)  │
    │   "submitted_photo_url": "…/submitted.png",   // as uploaded       │
    │   "enhanced_photo_url":  "…/enhanced.png",    // Module-1 fix or   │
    │        // null when no enhancement was applied                     │
