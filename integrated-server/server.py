@@ -225,10 +225,7 @@ class DRModelService:
             (0.55 * canvas_np + 0.45 * heat_col).astype("uint8"),
             canvas_np,
         )
-        result_img = self._draw_badge(
-            Image.fromarray(overlay_np, "RGB"),
-            grade, confidence, referable_prob,
-        )
+        result_img = Image.fromarray(overlay_np, "RGB")
 
         classification = {
             "grade": grade,

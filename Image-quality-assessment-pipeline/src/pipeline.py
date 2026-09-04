@@ -33,6 +33,8 @@ import matplotlib.patches as patches
 from src.fov_detector import detect_retinal_fov
 from src.quality_metrics import compute_image_quality_metrics
 from src.dataset_inspector import inspect_decoded_image, compute_file_sha256
+from src.quality_classifier import classify_fundus_image_quality
+from src.quality_enhancer import process_borderline_image, assess_and_enhance_pipeline
 
 
 def worker_analyze_image(args):
@@ -793,6 +795,51 @@ def run_full_pipeline(dataset_dir, output_csv, report_summary_path, plots_dir, d
     print("=" * 60)
     
     return inv_stats, stats_df
+
+
+def process_fundus_image(image_input, filename=None):
+    """
+    Unified Module 1 (1A + 1B) Pipeline Entry Point for Single Image Processing.
+    
+    Architecture:
+        Original Image
+            ↓
+        Module 1A Quality Assessment
+            ↓
+        NON-CRITICAL / GRADABLE  → Accept original → OK TO GO
+        CRITICAL / NON_GRADABLE  → Reject → RECAPTURE
+        BORDERLINE               → Module 1B Enhancement (max 2 attempts, max 2 ops/attempt)
+                                 → Module 1A Reassessment
+                                 → Final Decision
+                                 
+    Parameters:
+        image_input: str file path or np.ndarray in BGR format (H, W, 3).
+        filename (optional): str filename for reporting.
+        
+    Returns:
+        dict: Complete pipeline result dictionary conforming to Section 8 & 15 contracts:
+            - 'final_status': 'NON-CRITICAL' | 'BORDERLINE' | 'CRITICAL'
+            - 'final_directive': 'OK TO GO' | 'RECAPTURE'
+            - 'final_decision': 'ACCEPT' | 'REJECT'
+            - 'ok_to_go': bool
+            - 'recapture_required': bool
+            - 'enhancement_required': bool
+            - 'final_image': np.ndarray BGR image
+            - 'original_image': np.ndarray BGR image
+            - 'metadata': complete Before/After audit metadata dict
+    """
+    if isinstance(image_input, str):
+        if filename is None:
+            filename = os.path.basename(image_input)
+        img_bgr = cv2.imread(image_input)
+        if img_bgr is None:
+            raise ValueError(f"Unable to read fundus image from path: {image_input}")
+    else:
+        img_bgr = image_input
+        if filename is None:
+            filename = 'unknown'
+            
+    return process_borderline_image(img_bgr, filename=filename)
 
 
 if __name__ == '__main__':
