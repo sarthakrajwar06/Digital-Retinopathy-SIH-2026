@@ -1,9 +1,9 @@
 /* ===================================================================
    DR Screening Dashboard — app.js
-   Frontend only. All result data (including the composited fundus image)
-   is designed to come from the backend. Today it uses a demo mock so the
-   dashboard runs standalone; wiring the real model is a one-function change
-   (see analyzeImage() and the contract below).
+   Frontend. All result data (including the composited fundus image) comes
+   from the integrated backend (`integrated-server/server.py`), which runs
+   the Module-1 quality gate + Module-3 EfficientNet-B0 classifier +
+   Grad-CAM, then returns exactly the shape documented below.
 
    ┌─────────────────────────────────────────────────────────────────┐
    │ BACKEND CONTRACT                                                  │
@@ -50,22 +50,6 @@ const GRADE_LABELS = {
   4: "Proliferative DR (Referable)",
 };
 
-/* ---- demo mock (delete once the backend returns real data) ---- */
-const MOCK = {
-  result_image_url: "assets/sample_result.png",
-  classification: {
-    grade: 3, confidence: 0.94,
-    class_probs: [0.01, 0.03, 0.10, 0.72, 0.14],
-    referable: true, referable_prob: 0.96,
-  },
-  lesions: { microaneurysms: 12, hemorrhages: 4, exudates: 7, detection_bars: [3, 12, 7, 4, 2] },
-  quality: { focus: "Optimal", illumination: "Optimal", field_of_view: "Optimal",
-             overall: "Excellent", enhancement: "Adaptive (CLAHE + Norm)" },
-  xai: { original_url: "assets/sample_original.png", heatmap_url: "assets/sample_heatmap.png" },
-  telemedicine: { throughput_per_hr: 120, capacity_per_year: 100000, current_load_pct: 68 },
-  history: [ { t: "Jan", grade: 1 }, { t: "Apr", grade: 2 }, { t: "Jul", grade: 2 }, { t: "Now", grade: 3 } ],
-};
-
 /* =============================== refs =============================== */
 const $ = (id) => document.getElementById(id);
 const app = document.querySelector(".app");
@@ -87,7 +71,6 @@ const newScreeningBtn = $("newScreeningBtn");
 let selectedFile = null;
 
 /* ============================ utilities ============================ */
-const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const selectedEye = () => document.querySelector('input[name="eye"]:checked')?.value || "Left";
 const svgNS = "http://www.w3.org/2000/svg";
 function el(name, attrs = {}) {
@@ -147,19 +130,17 @@ $("viewMode").addEventListener("change", (e) => {
 
 /* ======================= the backend seam ========================= */
 async function analyzeImage({ patientId, eye, file }) {
-  // ---- REAL BACKEND: uncomment when /api/analyze is live ----
-  // const fd = new FormData();
-  // fd.append("patient_id", patientId);
-  // fd.append("eye", eye);
-  // fd.append("image", file);
-  // const res = await fetch(`${API_BASE}/api/analyze`, { method: "POST", body: fd });
-  // if (!res.ok) throw new Error(`Analysis failed (${res.status})`);
-  // return await res.json();
-
-  // ---- DEMO MOCK: remove when backend is wired ----
-  await delay(1600);
-  const original = file ? URL.createObjectURL(file) : MOCK.xai.original_url;
-  return { ...MOCK, xai: { ...MOCK.xai, original_url: original } };
+  const fd = new FormData();
+  fd.append("patient_id", patientId);
+  fd.append("eye", eye);
+  fd.append("image", file);
+  const res = await fetch(`${API_BASE}/api/analyze`, { method: "POST", body: fd });
+  if (!res.ok) {
+    let msg = `Analysis failed (${res.status})`;
+    try { const j = await res.json(); if (j && j.error) msg = j.error; } catch (_) { /* keep default */ }
+    throw new Error(msg);
+  }
+  return await res.json();
 }
 
 /* ========================= submit / analyze ======================= */
@@ -211,16 +192,19 @@ function renderResults(d, eye) {
   resultImage.src = d.result_image_url;
   eyeLabel.textContent = `${eye} eye`;
 
+  // Module 1 quality-gate banner (recapture / borderline warning)
+  renderQualityGate(d);
+
   // DR classification
   $("drGrade").textContent = `LEVEL ${c.grade}`;
   $("drLabel").textContent = GRADE_LABELS[c.grade] ?? "—";
   $("drConfidence").textContent = `${Math.round(c.confidence * 100)}%`;
   drawGauge(c.grade);
 
-  // lesion counts
-  $("cntMicro").textContent = d.lesions.microaneurysms;
-  $("cntHem").textContent = d.lesions.hemorrhages;
-  $("cntExu").textContent = d.lesions.exudates;
+  // lesion counts (Module 2 not integrated yet -> backend sends null)
+  setCount($("cntMicro"), d.lesions && d.lesions.microaneurysms);
+  setCount($("cntHem"), d.lesions && d.lesions.hemorrhages);
+  setCount($("cntExu"), d.lesions && d.lesions.exudates);
 
   // quality pills
   setPill($("qFocus"), d.quality.focus);
@@ -228,7 +212,7 @@ function renderResults(d, eye) {
   setPill($("qFov"), d.quality.field_of_view);
 
   // lesion chart
-  drawBars(d.lesions.detection_bars);
+  drawBars((d.lesions && d.lesions.detection_bars) || []);
 
   // XAI thumbs
   setThumb($("xaiOriginal"), $("xaiOriginalWrap"), d.xai.original_url);
@@ -253,12 +237,43 @@ function renderResults(d, eye) {
 
 function setPill(node, value) {
   node.textContent = value;
-  node.className = "pill " + (/optimal|good|pass|excellent/i.test(value) ? "pill-ok"
-    : /poor|fail|reject/i.test(value) ? "pill-warn" : "pill-idle");
+  node.className = "pill " + (/optimal|good|pass|excellent|ok/i.test(value) ? "pill-ok"
+    : /poor|fail|reject|recapture|fair/i.test(value) ? "pill-warn" : "pill-idle");
+}
+function setCount(node, value) {
+  node.textContent = (value === null || value === undefined) ? "—" : value;
 }
 function setThumb(img, wrap, url) {
   img.src = url; img.hidden = false;
   wrap.querySelector("span").style.display = "none";
+}
+
+/* ---- Module-1 quality-gate banner (real verdict from the backend) ---- */
+function renderQualityGate(d) {
+  const banner = $("gateBanner");
+  const text = $("gateBannerText");
+  const g = d.quality_gate;
+  if (!g || !g.final_status) { banner.hidden = true; return; }
+
+  if (g.recapture_required) {
+    banner.className = "gate-banner gate-critical";
+    text.innerHTML = `<b>Image failed the quality gate — RECAPTURE REQUIRED.</b> ` +
+      `Module-1 verdict: ${g.final_status} (score ${(g.overall_score * 100).toFixed(0)}/100). ` +
+      `The DR grade below is for reference only and may be unreliable.`;
+  } else if (g.final_status === "BORDERLINE") {
+    banner.className = "gate-banner gate-warn";
+    text.innerHTML = `<b>Borderline image quality after enhancement.</b> ` +
+      `Enhancement applied: ${(g.operations && g.operations.join(", ")) || "none"}. ` +
+      `A repeat capture is recommended before relying on this grade.`;
+  } else if (g.enhancement_applied) {
+    banner.className = "gate-banner gate-ok";
+    text.innerHTML = `<b>Quality gate passed after enhancement</b> ` +
+      `(${g.original_status} → ${g.final_status}, score ${(g.overall_score * 100).toFixed(0)}→${(g.post_enhancement_score * 100).toFixed(0)}/100).`;
+  } else {
+    banner.hidden = true;   // NON-CRITICAL straight through
+    return;
+  }
+  banner.hidden = false;
 }
 
 /* ============================== charts ============================= */
@@ -375,7 +390,8 @@ function resetToStart() {
   $("drGrade").textContent = "—";
   $("drLabel").textContent = "DR Scale (grade pending…)";
   $("drConfidence").textContent = "—%";
-  $("cntMicro").textContent = "0"; $("cntHem").textContent = "0"; $("cntExu").textContent = "0";
+  ["cntMicro", "cntHem", "cntExu"].forEach((id) => { $(id).textContent = "—"; });
+  const gateBanner = $("gateBanner"); if (gateBanner) gateBanner.hidden = true;
   ["qFocus", "qIllum"].forEach((id) => { const p = $(id); p.textContent = "pending"; p.className = "pill pill-idle"; });
   const fov = $("qFov"); fov.textContent = "Not assessed"; fov.className = "pill pill-idle";
   $("tmThroughput").textContent = "—"; $("tmCapacity").textContent = "—"; $("tmLoad").textContent = "—";

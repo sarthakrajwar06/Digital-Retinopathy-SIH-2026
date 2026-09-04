@@ -132,8 +132,11 @@
               <span class="eye-badge" id="eyeLabel">Right eye</span>
               <div class="loading-overlay" id="loading" hidden>
                 <div class="spinner" aria-hidden="true"></div>
-                <p id="loadingText">Analyzing fundus image…</p>
+                <p id="loadingText">Running quality gate + DR model…</p>
               </div>
+            </div>
+            <div class="gate-banner" id="gateBanner" role="alert" hidden>
+              <span id="gateBannerText"></span>
             </div>
           </div>
 
@@ -162,9 +165,9 @@
               </div>
 
               <ul class="lesion-list">
-                <li><span>Microaneurysms</span><b id="cntMicro">0</b></li>
-                <li><span>Hemorrhages</span><b id="cntHem">0</b></li>
-                <li><span>Exudates</span><b id="cntExu">0</b></li>
+                <li><span>Microaneurysms</span><b id="cntMicro">—</b></li>
+                <li><span>Hemorrhages</span><b id="cntHem">—</b></li>
+                <li><span>Exudates</span><b id="cntExu">—</b></li>
               </ul>
             </div>
           </section>
@@ -186,6 +189,7 @@
             <div class="card-head"><h3>Lesion Detection</h3><span class="card-grip"></span></div>
             <div class="card-body">
               <svg id="lesionChart" viewBox="0 0 260 150" role="img" aria-label="Lesion detection chart"></svg>
+              <p class="card-note" id="lesionNote">Module 2 (lesion segmentation) is not integrated yet — counts are placeholders.</p>
             </div>
           </section>
 

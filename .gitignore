@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Integration server runtime data (generated)
+integrated-server/runtime/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -375,3 +375,17 @@ body {
   .field-inline { flex-wrap: wrap; gap: 12px; }
   .rail { grid-template-columns: 1fr; grid-template-areas: "cls" "qual" "les" "xai" "sim"; }
 }
+
+/* quality-gate banner (Module-1 verdict shown under the result image) */
+.gate-banner {
+  margin: 12px 2px 0; padding: 10px 14px; border-radius: 8px;
+  font-size: 12.5px; line-height: 1.45; border: 1px solid;
+}
+.gate-banner.gate-critical { background: #fdecea; border-color: #e0413a; color: #8c1f1a; }
+.gate-banner.gate-warn     { background: #fdf6e3; border-color: #d8a72b; color: #7a5c10; }
+.gate-banner.gate-ok       { background: #e9f6ec; border-color: #57a866; color: #1f5c2c; }
+
+/* small muted helper notes inside cards */
+.card-note {
+  margin: 8px 0 0; font-size: 11px; color: var(--ink-soft); text-align: center;
+}
