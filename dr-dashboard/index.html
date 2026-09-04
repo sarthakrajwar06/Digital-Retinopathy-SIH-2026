@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DR Screening Dashboard — Explainable AI</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <div class="app" data-state="empty">
@@ -132,8 +132,17 @@
               <span class="eye-badge" id="eyeLabel">Right eye</span>
               <div class="loading-overlay" id="loading" hidden>
                 <div class="spinner" aria-hidden="true"></div>
-                <p id="loadingText">Analyzing fundus image…</p>
+                <p id="loadingText">Running quality gate + DR model…</p>
               </div>
+            </div>
+            <div class="result-tabs" id="resultTabs" role="tablist" aria-label="Result image views" hidden>
+              <button type="button" class="result-tab" data-view="analyzed" role="tab">Grad-CAM analysis</button>
+              <button type="button" class="result-tab" data-view="submitted" role="tab">Submitted</button>
+              <button type="button" class="result-tab" data-view="enhanced" role="tab" id="tabEnhanced" hidden>Enhanced</button>
+            </div>
+            <p class="result-caption" id="resultCaption" hidden></p>
+            <div class="gate-banner" id="gateBanner" role="alert" hidden>
+              <span id="gateBannerText"></span>
             </div>
           </div>
 
@@ -162,9 +171,9 @@
               </div>
 
               <ul class="lesion-list">
-                <li><span>Microaneurysms</span><b id="cntMicro">0</b></li>
-                <li><span>Hemorrhages</span><b id="cntHem">0</b></li>
-                <li><span>Exudates</span><b id="cntExu">0</b></li>
+                <li><span>Microaneurysms</span><b id="cntMicro">—</b></li>
+                <li><span>Hemorrhages</span><b id="cntHem">—</b></li>
+                <li><span>Exudates</span><b id="cntExu">—</b></li>
               </ul>
             </div>
           </section>
@@ -183,19 +192,24 @@
 
           <!-- LESION DETECTION -->
           <section class="card card-blue" id="cardLesion">
-            <div class="card-head"><h3>Lesion Detection</h3><span class="card-grip"></span></div>
-            <div class="card-body">
+            <div class="card-head"><h3>Lesion Detection</h3>
+              <button type="button" class="expand-btn" id="lesionExpandBtn" title="View annotated image" aria-label="View lesion annotations" hidden>&#x26F0;</button>
+            </div>
+            <div class="card-body" id="lesionBody">
               <svg id="lesionChart" viewBox="0 0 260 150" role="img" aria-label="Lesion detection chart"></svg>
+              <p class="card-note" id="lesionNote">Run a screening to detect lesion candidates.</p>
             </div>
           </section>
 
           <!-- XAI ATTENTION -->
           <section class="card card-xai" id="cardXai">
-            <div class="card-head"><h3>XAI Attention</h3><span class="card-grip"></span></div>
-            <div class="card-body">
+            <div class="card-head"><h3>XAI Attention</h3>
+              <button type="button" class="expand-btn" id="xaiExpandBtn" title="Maximize XAI view" aria-label="Maximize XAI attention" hidden>&#x26F0;</button>
+            </div>
+            <div class="card-body" id="xaiBody">
               <div class="xai-pair">
-                <figure><div class="xai-thumb" id="xaiOriginalWrap"><span>Original</span><img id="xaiOriginal" alt="Original fundus" hidden /></div><figcaption>Original</figcaption></figure>
-                <figure><div class="xai-thumb" id="xaiHeatmapWrap"><span>Grad-CAM</span><img id="xaiHeatmap" alt="Grad-CAM heatmap" hidden /></div><figcaption>Grad-CAM Heatmap</figcaption></figure>
+                <figure class="xai-fig"><div class="xai-thumb" id="xaiOriginalWrap" title="Click to maximize"><span>Original · click to maximize</span><img id="xaiOriginal" alt="Original fundus" hidden /></div><figcaption>Original</figcaption></figure>
+                <figure class="xai-fig"><div class="xai-thumb" id="xaiHeatmapWrap" title="Click to maximize"><span>Grad-CAM · click to maximize</span><img id="xaiHeatmap" alt="Grad-CAM heatmap" hidden /></div><figcaption>Grad-CAM Heatmap</figcaption></figure>
               </div>
               <p class="xai-caption" id="xaiCaption">Heatmaps will appear after processing</p>
             </div>
@@ -235,6 +249,17 @@
     </main>
   </div>
 
-  <script src="app.js"></script>
+  <!-- ===================== LIGHTBOX (image maximizer) ===================== -->
+  <div class="lightbox" id="lightbox" hidden style="display:none" role="dialog" aria-modal="true" aria-label="Image viewer">
+    <div class="lightbox-panel">
+      <div class="lightbox-head">
+        <h3 id="lightboxTitle">Image viewer</h3>
+        <button type="button" class="icon-btn" id="lightboxClose" aria-label="Close viewer">✕</button>
+      </div>
+      <div class="lightbox-body" id="lightboxBody"></div>
+    </div>
+  </div>
+
+  <script src="app.js?v=3"></script>
 </body>
 </html>

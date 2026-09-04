@@ -207,11 +207,16 @@ body {
   position: relative;
   background: var(--navy);
   border-radius: var(--radius);
-  aspect-ratio: 1 / 0.82;
-  display: grid; place-items: center;
+  aspect-ratio: 1 / 0.82;   /* fallback; JS overrides it to the image's ratio */
+  display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
-#resultImage { width: 100%; height: 100%; object-fit: contain; display: block; }
+/* dynamic: JS sets the frame's aspect-ratio to the loaded image's own
+   dimensions, so any image is fully visible with no fixed-shape bars */
+#resultImage {
+  display: block; width: 100%; height: 100%;
+  object-fit: contain;
+}
 .eye-badge {
   position: absolute; top: 14px; right: 18px;
   color: #fff; font-weight: 700; font-size: 17px;
@@ -325,14 +330,21 @@ body {
 #lesionChart, #historyChart { width: 100%; height: auto; display: block; }
 
 /* XAI */
-.xai-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.xai-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
 .xai-pair figure { margin: 0; }
 .xai-thumb {
-  position: relative; aspect-ratio: 1/1; border-radius: 6px; overflow: hidden;
-  background: #cfd6dc; display: grid; place-items: center;
-  color: #7a8894; font-size: 12px; font-weight: 600;
+  position: relative; border-radius: 6px; overflow: hidden;
+  background: #0d1626; min-height: 130px;
+  display: flex; align-items: center; justify-content: center;
+  color: #9fb0c0; font-size: 11.5px; font-weight: 600;
 }
-.xai-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.xai-thumb > span {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  text-align: center; padding: 8px;
+}
+/* full image always shown, never cropped — thumb adapts to the image */
+.xai-thumb img { display: block; width: auto; height: auto; max-width: 100%; max-height: 300px; }
 .xai-pair figcaption { text-align: center; font-size: 11px; color: var(--ink-soft); margin-top: 5px; }
 .xai-caption { margin: 12px 0 0; font-size: 12px; color: var(--ink-soft); text-align: center; }
 
@@ -375,3 +387,105 @@ body {
   .field-inline { flex-wrap: wrap; gap: 12px; }
   .rail { grid-template-columns: 1fr; grid-template-areas: "cls" "qual" "les" "xai" "sim"; }
 }
+
+/* quality-gate banner (Module-1 verdict shown under the result image) */
+.gate-banner {
+  margin: 12px 2px 0; padding: 10px 14px; border-radius: 8px;
+  font-size: 12.5px; line-height: 1.45; border: 1px solid;
+}
+.gate-banner.gate-critical { background: #fdecea; border-color: #e0413a; color: #8c1f1a; }
+.gate-banner.gate-warn     { background: #fdf6e3; border-color: #d8a72b; color: #7a5c10; }
+.gate-banner.gate-ok       { background: #e9f6ec; border-color: #57a866; color: #1f5c2c; }
+
+/* small muted helper notes inside cards */
+.card-note {
+  margin: 8px 0 0; font-size: 11px; color: var(--ink-soft); text-align: center;
+}
+
+/* ------------------- result view tabs (center panel) ------------------- */
+.result-tabs {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 10px 12px 0;
+}
+.result-tab {
+  border: 1px solid var(--line); background: var(--white);
+  color: var(--ink-soft); border-radius: 999px;
+  font: inherit; font-size: 12px; font-weight: 600;
+  padding: 5px 13px; cursor: pointer;
+}
+.result-tab:hover { border-color: var(--nav-accent); color: var(--nav-accent); }
+.result-tab.is-active {
+  background: var(--navy); border-color: var(--navy); color: #fff;
+}
+.result-caption {
+  margin: 6px 14px 0; font-size: 11.5px; color: var(--ink-soft);
+}
+
+/* ------------------- clickable / expandable cards ---------------------- */
+.expand-btn {
+  border: 0; background: rgba(255,255,255,.14); color: #fff;
+  width: 26px; height: 26px; border-radius: 7px;
+  font-size: 14px; line-height: 1; cursor: pointer;
+  display: grid; place-items: center; flex: none;
+}
+.expand-btn:hover { background: rgba(255,255,255,.32); }
+
+/* results ready -> clicking the XAI / lesion card opens the viewer */
+.app[data-state="results"] #xaiBody,
+.app[data-state="results"] #lesionBody { cursor: pointer; }
+.xai-fig { cursor: zoom-in; }
+.xai-thumb:hover { outline: 2px solid var(--nav-accent); outline-offset: -2px; }
+
+/* ----------------------------- lightbox -------------------------------- */
+.lightbox {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(8, 15, 27, .9);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.lightbox-panel {
+  background: var(--white); color: var(--ink);
+  border-radius: 14px; max-width: min(1200px, 96vw);
+  max-height: 92vh; overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 18px 60px rgba(0,0,0,.5);
+}
+.lightbox-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 13px 16px; border-bottom: 1px solid var(--line);
+}
+.lightbox-head h3 { margin: 0; font-size: 14px; letter-spacing: .03em; }
+.lightbox-head .icon-btn { border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: var(--white); }
+.lightbox-body {
+  padding: 14px 16px 16px; overflow: auto;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px; align-items: start;
+}
+.lb-fig { margin: 0; }
+.lb-fig a {
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; overflow: hidden; background: #101b2a;
+}
+.lb-fig img { max-width: 100%; max-height: 68vh; width: auto; height: auto;
+  object-fit: contain; display: block; }
+.lb-fig a:hover img { opacity: .92; }
+.lb-fig figcaption { text-align: center; font-size: 12px; color: var(--ink-soft); margin-top: 6px; }
+.lb-note { grid-column: 1 / -1; margin: 2px 0 0; font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
+.lb-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 4px 0 8px; }
+.lb-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; }
+.lb-chip i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+/* ---- HARDENED OVERLAY VISIBILITY ----
+   1) `.lightbox` defaults to display:none (this later rule beats the earlier
+      `.lightbox{display:flex}` at equal specificity), so the "Image viewer"
+      can NEVER appear before it is explicitly opened.
+   2) The `hidden` attribute always wins (display rules override the UA
+      [hidden]{display:none} otherwise) for every display-toggled element.
+   3) JS additionally toggles inline display on open/close (see app.js). */
+.lightbox { display: none; }
+.lightbox[hidden],
+.loading-overlay[hidden],
+.result-tabs[hidden],
+.expand-btn[hidden],
+#historyChart[hidden],
+#lesionChart[hidden] { display: none !important; }
