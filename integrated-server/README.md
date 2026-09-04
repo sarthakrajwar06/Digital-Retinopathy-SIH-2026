@@ -99,10 +99,16 @@ OK-TO-GO and RECAPTURE paths. Pass your own images as arguments to test more.
 
 ## Honest limits (what is still placeholder)
 
-- **Lesion Detection (Module 2)** does not exist in this repo yet → the API
-  returns `lesions: {…: null}` and the dashboard shows a "Module 2 not
-  integrated" note. Wiring it means: add a Module-2 folder with a detector,
-  then replace the `lesions` block in `server.py`.
+- **Lesion Detection** runs the **provisional Module-2 placeholder**
+  (`lesion_annotator.py`): a deterministic classical-CV *candidate* detector
+  (MA / haemorrhages / exudates, FOV-masked) so the panel, the histogram and
+  the annotated image are live. Counts are candidates, **not** clinical
+  diagnoses — swap the file for your trained Module-2 segmenter when ready
+  (keep the same return contract).
+- Each `/outputs/<run_id>/` may contain: `original.png` · `heatmap.png` ·
+  `result.png` (Grad-CAM composite) · `submitted.png` (as uploaded) ·
+  `enhanced.png` (only when the gate enhanced) · `annotated.png` (lesion
+  boxes, when candidates exist).
 - **Patient history** is a local JSON file (single-node demo); replace
   `record_screening()`/`telemedicine_stats()` with your DB/telemetry service.
 - **Class balance / clinical thresholds** — Module 1 thresholds are

@@ -23,8 +23,19 @@ python ../integrated-server/server.py
 ```
 
 Enter a patient ID (optional), pick an eye, upload a fundus photo, click
-**Start analysis** → the panels fill with real model outputs. No backend
+**Start analysis** → the left panel immediately shows the submitted photo
+(never an empty box) and fills with real model outputs when ready. No backend
 running? The form shows a clear error telling you the server is offline.
+
+### Viewer interactions (results view)
+
+- **Center panel tabs** — Grad-CAM analysis / Submitted / Enhanced: defaults
+  to the real photo (Enhanced when the quality gate fixed the image), the
+  heatmap composite is one tab away.
+- **XAI Attention** — click the section (or the ⛰ expand icon / either
+  thumbnail) to open a maximized viewer with Original · Heatmap · Overlay.
+- **Lesion Detection** — click the section (or the ⛰ icon) to open the
+  annotated fundus with box colours + legend; the histogram gets count labels.
 
 ## Files
 

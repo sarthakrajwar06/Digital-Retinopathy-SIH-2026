@@ -61,15 +61,28 @@ def run_analyze(client, path: Path, patient: str):
     assert abs(sum(j["classification"]["class_probs"]) - 1.0) < 0.05
     assert j["classification"]["referable"] == (j["classification"]["grade"] >= 2)
 
-    for key in ("result_image_url", "xai", "quality", "quality_gate",
-                "lesions", "telemedicine", "history"):
+    for key in ("result_image_url", "submitted_photo_url", "xai", "quality",
+                "quality_gate", "lesions", "telemedicine", "history"):
         assert key in j, f"missing response key {key}"
 
     gate = j["quality_gate"]
     assert gate["action"] in ("OK TO GO", "ENHANCEMENT", "RECAPTURE")
 
+    # enhanced photo present only when the quality gate enhanced the image
+    assert (j["enhanced_photo_url"] is not None) == bool(gate["enhancement_applied"]), \
+        "enhanced_photo_url must exist iff enhancement was applied"
+
     # outputs physically exist and are servable
-    for url in (j["result_image_url"], j["xai"]["original_url"], j["xai"]["heatmap_url"]):
+    urls = [j["result_image_url"], j["submitted_photo_url"],
+            j["xai"]["original_url"], j["xai"]["heatmap_url"]]
+    les = j["lesions"]
+    if j["enhanced_photo_url"]:
+        urls.append(j["enhanced_photo_url"])
+    if les.get("annotated_url"):
+        urls.append(les["annotated_url"])
+        for k in ("microaneurysms", "hemorrhages", "exudates"):
+            assert k in les and isinstance(les[k], int)
+    for url in urls:
         r = client.get(url)
         assert r.status_code == 200, f"missing static output {url}"
         assert len(r.data) > 1000

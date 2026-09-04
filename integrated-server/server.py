@@ -90,6 +90,18 @@ except Exception as exc:  # pragma: no cover - surfaced via /api/health
     QUALITY_READY = False
     QUALITY_ERROR = f"{type(exc).__name__}: {exc}"
 
+# Module-2 placeholder — provisional lesion-candidate annotator (see its
+# own docstring). Fully optional: the API degrades to zero-counts if absent.
+try:
+    from lesion_annotator import annotate_lesion_candidates  # noqa: E402
+    ANNOTATOR_READY = True
+    ANNOTATOR_ERROR = None
+except Exception as exc:  # pragma: no cover
+    ANNOTATOR_READY = False
+    ANNOTATOR_ERROR = f"{type(exc).__name__}: {exc}"
+
+PHOTO_LONGEST = 1600   # full-res photo copies kept for the dashboard
+
 # =========================================================================== #
 # Module 3 + Grad-CAM service  (torch imports are deferred/lazy on purpose so
 # the dashboard still serves even if the ML stack is not installed yet)
@@ -501,12 +513,36 @@ def create_app():
         pil_for_model = Image.fromarray(cv2.cvtColor(passed_bgr, cv2.COLOR_BGR2RGB))
         classification, canvas, heat_img, result_img = model.explain(pil_for_model)
 
+        # ---- 2b) Module-2 placeholder: lesion-candidate annotations ------- #
+        if ANNOTATOR_READY:
+            ann = annotate_lesion_candidates(passed_bgr)
+        else:
+            ann = {"microaneurysms": 0, "hemorrhages": 0, "exudates": 0,
+                   "annotated_bgr": None,
+                   "note": f"Annotator unavailable: {ANNOTATOR_ERROR}"}
+
         # ----------------------- 3) persist outputs ---------------------- #
         run_dir = OUTPUT_DIR / run_id
         run_dir.mkdir(parents=True, exist_ok=True)
         canvas.save(run_dir / "original.png")
         heat_img.save(run_dir / "heatmap.png")
         result_img.save(run_dir / "result.png")
+
+        def _save_photo(arr_bgr, name):
+            """Downscale (max side ~1600) and store a full-res photo copy."""
+            hh, ww = arr_bgr.shape[:2]
+            sc = min(1.0, PHOTO_LONGEST / float(max(hh, ww)))
+            if sc < 1.0:
+                arr_bgr = cv2.resize(
+                    arr_bgr, (int(round(ww * sc)), int(round(hh * sc))),
+                    interpolation=cv2.INTER_AREA)
+            Image.fromarray(cv2.cvtColor(arr_bgr, cv2.COLOR_BGR2RGB)).save(run_dir / name)
+
+        _save_photo(bgr, "submitted.png")                       # raw upload
+        if qres.get("enhancement_applied"):
+            _save_photo(passed_bgr, "enhanced.png")             # Module-1 enhanced
+        if ann.get("annotated_bgr") is not None:
+            _save_photo(ann["annotated_bgr"], "annotated.png")  # lesion boxes
 
         # ----------------------- 4) history store ------------------------ #
         history = record_screening(
@@ -523,13 +559,20 @@ def create_app():
 
         payload = {
             "result_image_url": f"/outputs/{run_id}/result.png",
+            "submitted_photo_url": f"/outputs/{run_id}/submitted.png",
+            "enhanced_photo_url": (f"/outputs/{run_id}/enhanced.png"
+                                   if qres.get("enhancement_applied") else None),
             "classification": classification,
             "lesions": {
-                "microaneurysms": None,
-                "hemorrhages": None,
-                "exudates": None,
-                "detection_bars": [],
-                "note": "Module 2 (lesion segmentation) is not integrated yet",
+                "microaneurysms": int(ann["microaneurysms"]),
+                "hemorrhages": int(ann["hemorrhages"]),
+                "exudates": int(ann["exudates"]),
+                "detection_bars": [int(ann["microaneurysms"]),
+                                   int(ann["hemorrhages"]),
+                                   int(ann["exudates"])],
+                "annotated_url": (f"/outputs/{run_id}/annotated.png"
+                                  if ann.get("annotated_bgr") is not None else None),
+                "note": ann.get("note", "Module 2 (lesion segmentation) is not integrated yet"),
             },
             "quality": {
                 "focus": q["focus"],

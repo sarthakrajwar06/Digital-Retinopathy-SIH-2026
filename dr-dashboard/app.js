@@ -13,7 +13,10 @@
    │ 200 OK → JSON:                                                    │
    │ {                                                                 │
    │   "result_image_url": "https://…/result.png",  // fundus WITH     │
-   │        // Grad-CAM heatmap + lesion boxes already drawn in        │
+   │        // Grad-CAM heatmap + grade badge drawn in                  │
+   │   "submitted_photo_url": "…/submitted.png",   // as uploaded       │
+   │   "enhanced_photo_url":  "…/enhanced.png",    // Module-1 fix or   │
+   │        // null when no enhancement was applied                     │
    │   "classification": {                                             │
    │      "grade": 3,                 // 0..4 from DRPredictor          │
    │      "confidence": 0.94,         // max softmax prob              │
@@ -22,10 +25,13 @@
    │      "referable_prob": 0.96      // P(G2)+P(G3)+P(G4)             │
    │   },                                                              │
    │   "lesions":  { "microaneurysms":12, "hemorrhages":4,             │
-   │                 "exudates":7, "detection_bars":[3,12,7,4,2] },    │
+   │                 "exudates":7, "detection_bars":[12,4,7],          │
+   │                 "annotated_url": "…/annotated.png" }, // Module-2 │
+   │        // provisional candidates; annotated_url may be null       │
    │   "quality":  { "focus":"Optimal", "illumination":"Optimal",      │
    │                 "field_of_view":"Optimal", "overall":"Excellent", │
    │                 "enhancement":"Adaptive (CLAHE + Norm)" },        │
+   │   "quality_gate": { …Module-1 verdict + reason… },                │
    │   "xai":      { "original_url":"…", "heatmap_url":"…" },           │
    │   "telemedicine": { "throughput_per_hr":120,                      │
    │                 "capacity_per_year":100000, "current_load_pct":68 },│
@@ -33,9 +39,10 @@
    │                 {"t":"2026-07","grade":2}, {"t":"now","grade":3} ] │
    │ }                                                                 │
    │                                                                   │
-   │ NOTE: classification.* maps 1:1 to DRPredictor output. The other  │
-   │ blocks (lesions/quality/telemedicine/history) are stubbed until   │
-   │ their modules exist — return them from the backend in this shape. │
+   │ NOTE: classification.* maps 1:1 to DRPredictor output. Lesion     │
+   │ counts/annotations come from the provisional Module-2 candidate   │
+   │ annotator; telemedicine/history are placeholders until their      │
+   │ modules exist — return them from the backend in this shape.       │
    └─────────────────────────────────────────────────────────────────┘
    =================================================================== */
 
@@ -69,6 +76,14 @@ const eyeLabel = $("eyeLabel");
 const newScreeningBtn = $("newScreeningBtn");
 
 let selectedFile = null;
+let lastData = null;      // latest /api/analyze payload
+let previewUrl = null;    // object URL of the uploaded file (loading view)
+let resultView = "analyzed"; // which image the center panel shows
+
+/* Lesion chart metadata (3 bars: MA / haemorrhages / exudates) */
+const LESION_LABELS = ["MA", "HEM", "EXU"];
+const LESION_COLORS = ["#7fd6ff", "#ff9d97", "#ffe08a"];
+const LESION_FULL = ["Microaneurysms", "Hemorrhages", "Exudates"];
 
 /* ============================ utilities ============================ */
 const selectedEye = () => document.querySelector('input[name="eye"]:checked')?.value || "Left";
@@ -81,6 +96,46 @@ function el(name, attrs = {}) {
 function polar(cx, cy, r, deg) {
   const a = (deg * Math.PI) / 180;
   return [cx + r * Math.cos(a), cy - r * Math.sin(a)];
+}
+
+/* ---------------- dynamic result-image frame ----------------
+   The center preview box takes the aspect-ratio of whatever image is shown,
+   so images of any shape are always displayed completely (no cropping, no
+   fixed 1/0.82 frame). Height is clamped for sanity on extreme ratios; the
+   image then letterboxes inside the dark frame but is never cut off. */
+const resultWrap = document.querySelector(".result-image-wrap");
+
+function fitResultFrame(img) {
+  const nw = img.naturalWidth, nh = img.naturalHeight;
+  if (!nw || !nh) return;
+  const cw = resultWrap.clientWidth || 640;
+  const maxH = Math.min(window.innerHeight * 0.72, 760);
+  const minH = 200;
+  const h = (cw * nh) / nw;
+  resultWrap.style.width = "100%";
+  resultWrap.style.aspectRatio =
+    h >= minH && h <= maxH ? `${nw} / ${nh}` : `${cw} / ${Math.min(Math.max(h, minH), maxH)}`;
+}
+
+function setResultImage(src) {
+  const apply = () => fitResultFrame(resultImage);
+  if (resultImage.src === src && resultImage.complete) { apply(); return; }
+  resultImage.src = src;
+  if (resultImage.complete) apply();
+  else resultImage.addEventListener("load", apply, { once: true });
+}
+
+window.addEventListener("resize", () => {
+  if (resultImage.getAttribute("src")) fitResultFrame(resultImage);
+});
+
+function viewSrcOf(d, view) {
+  const map = {
+    analyzed:  d.result_image_url,
+    submitted: d.submitted_photo_url,
+    enhanced:  d.enhanced_photo_url,
+  };
+  return map[view] || null;
 }
 
 /* ============================ file input =========================== */
@@ -120,6 +175,19 @@ dropZone.addEventListener("drop", (e) => {
   if (f && f.type.startsWith("image/")) showPreview(f);
 });
 
+/* ===================== result-image view tabs ===================== */
+$("resultTabs").addEventListener("click", (e) => {
+  const btn = e.target.closest(".result-tab");
+  if (!btn) return;
+  resultView = btn.dataset.view;
+  document.querySelectorAll(".result-tab").forEach((b) =>
+    b.classList.toggle("is-active", b === btn));
+  if (!lastData) return;
+  const src = viewSrcOf(lastData, resultView);
+  if (src) setResultImage(src);
+  renderResultCaption();
+});
+
 /* ============================ view mode ============================ */
 $("viewMode").addEventListener("change", (e) => {
   const classificationOnly = e.target.value === "Classification only";
@@ -157,26 +225,36 @@ form.addEventListener("submit", async (e) => {
   const patientId = $("patientId").value.trim() || "Unlabeled";
   const eye = selectedEye();
 
-  // enter loading state (show result panel with overlay)
+  // enter loading state — the panel shows the submitted image right away
   app.dataset.state = "loading";
   uploadState.hidden = true;
   resultState.hidden = false;
   loading.hidden = false;
   eyeLabel.textContent = `${eye} eye`;
+  resultView = "submitted";
+  lastData = null;
+  $("resultTabs").hidden = true;
+  $("resultCaption").hidden = true;
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = URL.createObjectURL(selectedFile);
+  setResultImage(previewUrl);
   $("startBtn").disabled = true;
 
   try {
     const data = await analyzeImage({ patientId, eye, file: selectedFile });
+    lastData = data;
     renderResults(data, eye);
     app.dataset.state = "results";
     loading.hidden = true;
     newScreeningBtn.hidden = false;
+    if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
   } catch (err) {
     // failure is a moment for direction, not mood
     app.dataset.state = "empty";
     resultState.hidden = true;
     uploadState.hidden = false;
     loading.hidden = true;
+    if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
     formError.textContent = `${err.message}. Check the backend is running, then try again.`;
     formError.hidden = false;
   } finally {
@@ -188,9 +266,11 @@ form.addEventListener("submit", async (e) => {
 function renderResults(d, eye) {
   const c = d.classification;
 
-  // main composited image (from backend)
-  resultImage.src = d.result_image_url;
+  // center result image + tabs: Grad-CAM analysis / Submitted / Enhanced
   eyeLabel.textContent = `${eye} eye`;
+  renderResultTabs(d);
+  const initialSrc = viewSrcOf(d, resultView);
+  if (initialSrc) setResultImage(initialSrc);
 
   // Module 1 quality-gate banner (recapture / borderline warning)
   renderQualityGate(d);
@@ -201,23 +281,30 @@ function renderResults(d, eye) {
   $("drConfidence").textContent = `${Math.round(c.confidence * 100)}%`;
   drawGauge(c.grade);
 
-  // lesion counts (Module 2 not integrated yet -> backend sends null)
-  setCount($("cntMicro"), d.lesions && d.lesions.microaneurysms);
-  setCount($("cntHem"), d.lesions && d.lesions.hemorrhages);
-  setCount($("cntExu"), d.lesions && d.lesions.exudates);
+  // lesion counts
+  const ls = d.lesions || {};
+  setCount($("cntMicro"), ls.microaneurysms);
+  setCount($("cntHem"), ls.hemorrhages);
+  setCount($("cntExu"), ls.exudates);
 
   // quality pills
   setPill($("qFocus"), d.quality.focus);
   setPill($("qIllum"), d.quality.illumination);
   setPill($("qFov"), d.quality.field_of_view);
 
-  // lesion chart
-  drawBars((d.lesions && d.lesions.detection_bars) || []);
+  // lesion chart (histogram) + annotated image access
+  drawBars([ls.microaneurysms, ls.hemorrhages, ls.exudates]);
+  const note = ls.note
+    ? `Counts shown are ${ls.note}.`
+    : "Counts are provisional lesion-candidate detections (Module 2 not integrated).";
+  $("lesionNote").textContent = note + " Click to view annotated image.";
+  $("lesionExpandBtn").hidden = !ls.annotated_url;
 
-  // XAI thumbs
+  // XAI thumbs + expand affordance
   setThumb($("xaiOriginal"), $("xaiOriginalWrap"), d.xai.original_url);
   setThumb($("xaiHeatmap"), $("xaiHeatmapWrap"), d.xai.heatmap_url);
-  $("xaiCaption").textContent = `Key regions for Level ${c.grade} prediction highlighted`;
+  $("xaiCaption").textContent = `Key regions for Level ${c.grade} prediction highlighted — click to maximize`;
+  $("xaiExpandBtn").hidden = false;
 
   // telemedicine
   const t = d.telemedicine;
@@ -234,6 +321,152 @@ function renderResults(d, eye) {
   $("sbMid").innerHTML = `<em>Enhanced:</em> ${d.quality.enhancement}`;
   $("sbGrade").textContent = `LEVEL ${c.grade}${c.referable ? " (Referable)" : ""}`;
 }
+
+function renderResultTabs(d) {
+  const tabs = $("resultTabs");
+  const map = {
+    analyzed:  { label: "Grad-CAM analysis", src: d.result_image_url },
+    submitted: { label: "Submitted", src: d.submitted_photo_url },
+    enhanced:  { label: "Enhanced", src: d.enhanced_photo_url },
+  };
+  // default to the real photo (enhanced when the quality gate fixed it,
+  // otherwise the submitted one); Grad-CAM stays one click away
+  const preferred = d.enhanced_photo_url ? "enhanced" : "submitted";
+  const initial = map[preferred] && map[preferred].src ? preferred : "analyzed";
+  const active = resultView && map[resultView] && map[resultView].src ? resultView : initial;
+  resultView = active;
+
+  const tabBar = tabs.parentElement;
+  let seen = 0;
+  ["analyzed", "submitted", "enhanced"].forEach((key) => {
+    const tab = tabBar.querySelector(`.result-tab[data-view="${key}"]`);
+    if (!tab) return;
+    const info = map[key];
+    if (key === "enhanced" && !info.src) { tab.hidden = true; return; }
+    tab.hidden = false;
+    tab.textContent = info.label;
+    tab.classList.toggle("is-active", key === active);
+    seen++;
+  });
+  tabs.hidden = seen <= 1;
+  $("resultCaption").hidden = false;
+  renderResultCaption();
+}
+
+function renderResultCaption() {
+  const cap = $("resultCaption");
+  if (!lastData) { cap.textContent = "Submitted image — analysis in progress…"; return; }
+  const c = lastData.classification;
+  const maps = {
+    analyzed:  `Grad-CAM overlay — fundus fed to the model, heatmap highlights the key regions for Level ${c.grade}.`,
+    submitted: `Image as submitted (quality assessment & DR grading use this or the enhanced version).`,
+    enhanced:  `Image enhanced by the Module-1 quality pipeline, then graded.`,
+  };
+  cap.textContent = maps[resultView] || "";
+}
+
+/* ======================== lightbox / maximizer ====================== */
+function openLightbox(title, items, note) {
+  $("lightboxTitle").textContent = title;
+  const body = $("lightboxBody");
+  body.innerHTML = "";
+  items.forEach((it) => {
+    const fig = document.createElement("figure");
+    fig.className = "lb-fig";
+    const a = document.createElement("a");
+    a.href = it.src; a.target = "_blank"; a.rel = "noopener";
+    a.title = "Open in new tab";
+    const img = document.createElement("img");
+    img.src = it.src; img.alt = it.caption || "";
+    a.appendChild(img);
+    const figcap = document.createElement("figcaption");
+    figcap.textContent = it.caption || "";
+    fig.appendChild(a); fig.appendChild(figcap);
+    body.appendChild(fig);
+  });
+  if (note) {
+    const p = document.createElement("p");
+    p.className = "lb-note";
+    p.textContent = note;
+    body.appendChild(p);
+  }
+  const lb = $("lightbox");
+  lb.hidden = false;
+  lb.style.display = "flex";   // inline style beats any stylesheet rule
+  document.body.style.overflow = "hidden";
+}
+
+function closeLightbox() {
+  const lb = $("lightbox");
+  lb.style.display = "none";
+  lb.hidden = true;
+  $("lightboxBody").innerHTML = "";
+  document.body.style.overflow = "";
+}
+
+$("lightboxClose").addEventListener("click", closeLightbox);
+$("lightbox").addEventListener("click", (e) => {
+  if (e.target === $("lightbox")) closeLightbox();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("lightbox").hidden) closeLightbox();
+});
+
+function openXaiLightbox() {
+  if (!lastData || !lastData.xai) return;
+  openLightbox(
+    "XAI Attention — Grad-CAM",
+    [
+      { src: lastData.xai.original_url, caption: "Original (model input)" },
+      { src: lastData.xai.heatmap_url, caption: `Grad-CAM heatmap — Level ${lastData.classification.grade} evidence` },
+      { src: lastData.result_image_url, caption: "Overlay on model input" },
+    ],
+    "Jet overlay: red = strongest influence on the predicted grade. Click any image to open it in a new tab."
+  );
+}
+
+function openLesionLightbox() {
+  const ls = lastData ? lastData.lesions : null;
+  if (!ls || !ls.annotated_url) return;
+  const items = [{ src: ls.annotated_url, caption: "Annotated fundus — lesion candidates" }];
+  if (lastData.enhanced_photo_url) {
+    items.push({ src: lastData.enhanced_photo_url, caption: "Enhanced image (graded)" });
+  }
+  const legend = document.createElement("div");
+  legend.className = "lb-legend";
+  // colors match the boxes drawn in annotated.png (RGB)
+  [["Microaneurysms", "#00e5ff"], ["Hemorrhages", "#ff5050"], ["Exudates", "#ffc800"]]
+    .forEach(([name, color]) => {
+      const chip = document.createElement("span");
+      chip.className = "lb-chip";
+      const sw = document.createElement("i");
+      sw.style.background = color;
+      chip.appendChild(sw);
+      chip.appendChild(document.createTextNode(`${name}: ${ls[name.toLowerCase()]}`));
+      legend.appendChild(chip);
+    });
+  openLightbox("Lesion Detection — annotated image", items,
+    "Boxes mark provisional candidate locations from the classical-CV annotator (Module 2 is not trained yet).");
+  $("lightboxBody").insertBefore(legend, $("lightboxBody").firstChild);
+}
+
+$("xaiExpandBtn").addEventListener("click", openXaiLightbox);
+$("xaiBody").addEventListener("click", (e) => {
+  if (e.target.closest(".expand-btn")) return;
+  if (app.dataset.state === "results" && lastData && lastData.xai) openXaiLightbox();
+});
+document.querySelectorAll(".xai-thumb").forEach((el) => el.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (app.dataset.state === "results" && lastData && lastData.xai) openXaiLightbox();
+}));
+
+$("lesionExpandBtn").addEventListener("click", openLesionLightbox);
+$("cardLesion").addEventListener("click", (e) => {
+  if (e.target.closest(".expand-btn")) return;
+  if (app.dataset.state === "results" && lastData && lastData.lesions && lastData.lesions.annotated_url) {
+    openLesionLightbox();
+  }
+});
 
 function setPill(node, value) {
   node.textContent = value;
@@ -309,32 +542,43 @@ function drawGauge(grade) {
 function drawBars(values) {
   const svg = $("lesionChart");
   svg.innerHTML = "";
-  const W = 260, H = 150, padL = 26, padB = 22, padT = 8;
-  const base = H - padB, plotW = W - padL - 12, plotH = base - padT;
-  const yMax = Math.max(16, ...values);
+  const W = 260, H = 150, padL = 34, padB = 24, padT = 10;
+  const base = H - padB, plotW = W - padL - 14, plotH = base - padT;
+  const counts = values.map((v) => Math.max(0, Math.round(Number(v) || 0)));
+  const yMax = Math.max(10, ...counts);
+  const yStep = yMax > 20 ? (yMax > 80 ? 40 : 20) : 5;
 
   // y grid + labels
-  for (let g = 0; g <= yMax; g += 4) {
+  for (let g = 0; g <= yMax; g += yStep) {
     const y = base - (g / yMax) * plotH;
-    svg.appendChild(el("line", { x1: padL, y1: y, x2: W - 6, y2: y,
-      stroke: "rgba(255,255,255,.28)", "stroke-width": 1 }));
+    svg.appendChild(el("line", { x1: padL, y1: y, x2: W - 10, y2: y,
+      stroke: "rgba(255,255,255,.22)", "stroke-width": 1 }));
     const tx = document.createElementNS(svgNS, "text");
-    tx.setAttribute("x", padL - 6); tx.setAttribute("y", y + 3);
+    tx.setAttribute("x", padL - 7); tx.setAttribute("y", y + 3);
     tx.setAttribute("text-anchor", "end"); tx.setAttribute("font-size", "9");
     tx.setAttribute("fill", "rgba(255,255,255,.85)"); tx.textContent = g;
     svg.appendChild(tx);
   }
-  // bars
-  const n = values.length, slot = plotW / n, bw = slot * 0.5;
-  values.forEach((v, i) => {
-    const h = (v / yMax) * plotH;
+
+  // bars — microaneurysms / hemorrhages / exudates (with count labels)
+  const n = 3, slot = plotW / n, bw = Math.min(slot * 0.56, 52);
+  counts.forEach((v, i) => {
+    const h = Math.max(v > 0 ? 2 : 0, (v / yMax) * plotH);
     const x = padL + i * slot + (slot - bw) / 2;
-    svg.appendChild(el("rect", { x, y: base - h, width: bw, height: h, rx: 2,
-      fill: "rgba(255,255,255,.92)" }));
+    svg.appendChild(el("rect", { x, y: base - h, width: bw, height: h, rx: 3,
+      fill: LESION_COLORS[i] }));
+    if (v > 0) {
+      const tv = document.createElementNS(svgNS, "text");
+      tv.setAttribute("x", x + bw / 2); tv.setAttribute("y", base - h - 4);
+      tv.setAttribute("text-anchor", "middle"); tv.setAttribute("font-size", "10");
+      tv.setAttribute("font-weight", "bold");
+      tv.setAttribute("fill", "#fff"); tv.textContent = v;
+      svg.appendChild(tv);
+    }
     const tx = document.createElementNS(svgNS, "text");
-    tx.setAttribute("x", x + bw / 2); tx.setAttribute("y", base + 14);
-    tx.setAttribute("text-anchor", "middle"); tx.setAttribute("font-size", "9");
-    tx.setAttribute("fill", "rgba(255,255,255,.85)"); tx.textContent = i + 1;
+    tx.setAttribute("x", x + bw / 2); tx.setAttribute("y", base + 15);
+    tx.setAttribute("text-anchor", "middle"); tx.setAttribute("font-size", "8.5");
+    tx.setAttribute("fill", "rgba(255,255,255,.92)"); tx.textContent = LESION_LABELS[i];
     svg.appendChild(tx);
   });
 }
@@ -378,6 +622,9 @@ function drawHistory(points) {
 
 /* ============================== reset ============================= */
 function resetToStart() {
+  if (!$("lightbox").hidden) closeLightbox();
+  resultWrap.style.width = "";
+  resultWrap.style.aspectRatio = "";
   app.dataset.state = "empty";
   resultState.hidden = true;
   uploadState.hidden = false;
@@ -396,17 +643,25 @@ function resetToStart() {
   const fov = $("qFov"); fov.textContent = "Not assessed"; fov.className = "pill pill-idle";
   $("tmThroughput").textContent = "—"; $("tmCapacity").textContent = "—"; $("tmLoad").textContent = "—";
   $("tmLoadBar").style.width = "0%";
-  $("xaiCaption").textContent = "Heatmaps will appear after processing";
+  $("xaiCaption").textContent = "Heatmaps will appear after processing — click to maximize";
   ["xaiOriginal", "xaiHeatmap"].forEach((id) => { const im = $(id); im.hidden = true; im.removeAttribute("src"); });
   $("xaiOriginalWrap").querySelector("span").style.display = "";
   $("xaiHeatmapWrap").querySelector("span").style.display = "";
+  $("xaiExpandBtn").hidden = true;
+  $("lesionExpandBtn").hidden = true;
+  $("lesionNote").textContent = "Run a screening to detect lesion candidates.";
   $("sbQuality").textContent = "Not assessed";
   $("sbMid").innerHTML = "<em>Ready for input</em>";
   $("sbGrade").textContent = "Pending";
   $("historyEmpty").hidden = false;
   $("historyChart").hidden = true;
+  $("resultTabs").hidden = true;
+  $("resultCaption").hidden = true;
+  if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
+  lastData = null;
+  resultView = "analyzed";
   drawGauge(0);
-  drawBars([0, 0, 0, 0, 0]);
+  drawBars([0, 0, 0]);
 }
 
 newScreeningBtn.addEventListener("click", resetToStart);
@@ -421,4 +676,4 @@ document.querySelectorAll(".nav-item").forEach((btn) =>
 
 /* ============================== init ============================= */
 drawGauge(0);
-drawBars([0, 0, 0, 0, 0]);
+drawBars([0, 0, 0]);
