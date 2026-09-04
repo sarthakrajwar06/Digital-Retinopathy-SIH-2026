@@ -1,0 +1,9 @@
+dataset/
+images.zip
+data/debug/
+reports/.cache_*.pkl
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env

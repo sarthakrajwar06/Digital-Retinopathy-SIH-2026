@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DR Screening Dashboard — Explainable AI</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app" data-state="empty">
+
+    <!-- ============================ SIDEBAR ============================ -->
+    <aside class="sidebar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M24 6c-7.2 0-13 5.6-13 12.6 0 4.5 2.4 8 5.4 10.4.9.7 1.4 1.4 1.5 2.3l.3 2.4h11.6l.3-2.4c.1-.9.6-1.6 1.5-2.3 3-2.4 5.4-5.9 5.4-10.4C37 11.6 31.2 6 24 6Z" fill="#5bbf6a"/>
+          <path d="M18 30h12v3a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-3Z" fill="#e88a2f"/>
+          <rect x="20" y="37" width="8" height="4" rx="1.5" fill="#e88a2f"/>
+          <path d="M24 13c-3.1 0-5.6 2.4-5.6 5.4" stroke="#fff" stroke-width="2" stroke-linecap="round" fill="none" opacity=".85"/>
+        </svg>
+      </div>
+
+      <nav class="nav" aria-label="Primary">
+        <button class="nav-item is-active" data-nav="dashboard" aria-current="page">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8v8H3V3Zm10 0h8v5h-8V3ZM3 13h8v8H3v-8Zm10 3h8v5h-8v-5Z"/></svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-nav="patients">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.4 0-8 2.5-8 5.5V21h16v-1.5c0-3-3.6-5.5-8-5.5Z"/></svg>
+          <span>Patients</span>
+        </button>
+        <button class="nav-item" data-nav="reports">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Zm8 1.5V8h4.5L14 3.5ZM8 12h8v1.6H8V12Zm0 3.4h8V17H8v-1.6Z"/></svg>
+          <span>Reports</span>
+        </button>
+        <button class="nav-item" data-nav="simulink">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h6v4H7v6h2v4H3v-4h2V9H3V5Zm12 0h6v4h-2v6h2v4h-6v-4h2V9h-2V5Z"/></svg>
+          <span>Simulink Telemedicine</span>
+        </button>
+        <button class="nav-item" data-nav="settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm9 4-2 .3a7 7 0 0 1-.7 1.7l1.2 1.7-1.8 1.8-1.7-1.2a7 7 0 0 1-1.7.7L14 21h-2.6l-.3-2a7 7 0 0 1-1.7-.7l-1.7 1.2-1.8-1.8 1.2-1.7a7 7 0 0 1-.7-1.7L3.6 12l2-.3a7 7 0 0 1 .7-1.7L5.1 8.3l1.8-1.8 1.7 1.2a7 7 0 0 1 1.7-.7L11.4 5H14l.3 2a7 7 0 0 1 1.7.7l1.7-1.2 1.8 1.8-1.2 1.7a7 7 0 0 1 .7 1.7l2 .3Z"/></svg>
+          <span>Settings</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-foot">SIH 2026</div>
+    </aside>
+
+    <!-- ============================= MAIN ============================= -->
+    <main class="main">
+
+      <header class="topbar">
+        <div class="topbar-title">
+          <h1>Dashboard</h1>
+          <p>MATLAB-based <span class="dot">•</span> Explainable AI</p>
+        </div>
+        <div class="topbar-controls">
+          <button class="reset-btn" id="newScreeningBtn" hidden>+ New screening</button>
+          <div class="mode-select">
+            <select id="viewMode" aria-label="View mode">
+              <option>Explainable AI</option>
+              <option>Classification only</option>
+              <option>Clinician view</option>
+            </select>
+          </div>
+          <button class="icon-btn" title="About" aria-label="About">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-6h2v6Zm0-8h-2V7h2v2Z"/></svg>
+          </button>
+          <button class="icon-btn" title="Account" aria-label="Account">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.4 0-8 2.5-8 5.5V21h16v-1.5c0-3-3.6-5.5-8-5.5Z"/></svg>
+          </button>
+          <button class="icon-btn" title="Settings" aria-label="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm9 4-2 .3a7 7 0 0 1-.7 1.7l1.2 1.7-1.8 1.8-1.7-1.2a7 7 0 0 1-1.7.7L14 21h-2.6l-.3-2a7 7 0 0 1-1.7-.7l-1.7 1.2-1.8-1.8 1.2-1.7a7 7 0 0 1-.7-1.7L3.6 12l2-.3a7 7 0 0 1 .7-1.7L5.1 8.3l1.8-1.8 1.7 1.2a7 7 0 0 1 1.7-.7L11.4 5H14l.3 2a7 7 0 0 1 1.7.7l1.7-1.2 1.8 1.8-1.2 1.7a7 7 0 0 1 .7 1.7l2 .3Z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="workspace">
+
+        <!-- ===================== CENTER COLUMN ===================== -->
+        <section class="center">
+
+          <!-- ---- EMPTY / UPLOAD STATE ---- -->
+          <div class="panel screening" id="uploadState">
+            <h2 class="screening-title">Start new DR screening</h2>
+
+            <form id="screeningForm" novalidate>
+              <div class="field">
+                <label for="patientId">Patient ID / Case number</label>
+                <input type="text" id="patientId" name="patientId" placeholder="e.g. RURAL-0421" autocomplete="off" />
+              </div>
+
+              <div class="field field-inline">
+                <span class="field-label">Select eye</span>
+                <label class="radio"><input type="radio" name="eye" value="Left" checked /> <span>Left</span></label>
+                <label class="radio"><input type="radio" name="eye" value="Right" /> <span>Right</span></label>
+              </div>
+
+              <div class="dropzone" id="dropZone" tabindex="0" role="button"
+                   aria-label="Upload a retinal fundus image. Drop a file or press Enter to browse.">
+                <div class="dz-inner" id="dzInner">
+                  <p class="dz-title">Image upload</p>
+                  <svg class="dz-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3l4 4h-3v6h-2V7H8l4-4Zm-7 9h2v6h10v-6h2v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7Z"/>
+                  </svg>
+                  <p class="dz-hint">Drop retinal fundus image or click <strong>Browse</strong></p>
+                  <div class="dz-actions">
+                    <button type="button" class="btn btn-light" id="browseBtn">Browse file…</button>
+                    <button type="button" class="btn btn-light" id="uploadBtn">Upload image</button>
+                  </div>
+                </div>
+                <div class="dz-preview" id="dzPreview" hidden>
+                  <img id="previewImg" alt="Selected fundus image preview" />
+                  <div class="dz-preview-meta">
+                    <span id="previewName">image.jpg</span>
+                    <button type="button" class="link-btn" id="clearImgBtn">Remove</button>
+                  </div>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" hidden />
+              </div>
+
+              <p class="form-error" id="formError" role="alert" hidden></p>
+
+              <button type="submit" class="btn btn-primary btn-analyze" id="startBtn">Start analysis</button>
+            </form>
+          </div>
+
+          <!-- ---- RESULT STATE ---- -->
+          <div class="panel result-panel" id="resultState" hidden>
+            <div class="result-image-wrap">
+              <img id="resultImage" alt="Analyzed fundus with Grad-CAM heatmap and detected lesions" />
+              <span class="eye-badge" id="eyeLabel">Right eye</span>
+              <div class="loading-overlay" id="loading" hidden>
+                <div class="spinner" aria-hidden="true"></div>
+                <p id="loadingText">Analyzing fundus image…</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---- STATUS BAR ---- -->
+          <div class="statusbar" id="statusBar" aria-live="polite">
+            <span><em>Image quality:</em> <b id="sbQuality">Not assessed</b></span>
+            <span id="sbMid"><em>Ready for input</em></span>
+            <span><em>Patient grade:</em> <b id="sbGrade">Pending</b></span>
+          </div>
+        </section>
+
+        <!-- ===================== RIGHT COLUMN ===================== -->
+        <aside class="rail">
+
+          <!-- DR CLASSIFICATION -->
+          <section class="card card-green" id="cardClassification">
+            <div class="card-head"><h3>DR Classification</h3><span class="card-grip"></span></div>
+            <div class="card-body">
+              <div class="dr-grade" id="drGrade">—</div>
+              <div class="dr-label" id="drLabel">DR Scale (grade pending…)</div>
+              <div class="dr-confidence">Confidence: <b id="drConfidence">—%</b></div>
+
+              <div class="gauge-wrap">
+                <svg id="gauge" viewBox="0 0 200 118" role="img" aria-label="DR severity gauge"></svg>
+                <div class="gauge-caption">DR Scale</div>
+              </div>
+
+              <ul class="lesion-list">
+                <li><span>Microaneurysms</span><b id="cntMicro">0</b></li>
+                <li><span>Hemorrhages</span><b id="cntHem">0</b></li>
+                <li><span>Exudates</span><b id="cntExu">0</b></li>
+              </ul>
+            </div>
+          </section>
+
+          <!-- QUALITY ASSESSMENT -->
+          <section class="card card-gold" id="cardQuality">
+            <div class="card-head"><h3>Quality Assessment</h3><span class="card-grip"></span></div>
+            <div class="card-body">
+              <ul class="quality-list">
+                <li><span>Focus</span><span class="pill pill-idle" id="qFocus">pending</span></li>
+                <li><span>Illumination</span><span class="pill pill-idle" id="qIllum">pending</span></li>
+                <li><span>Field of View</span><span class="pill pill-idle" id="qFov">Not assessed</span></li>
+              </ul>
+            </div>
+          </section>
+
+          <!-- LESION DETECTION -->
+          <section class="card card-blue" id="cardLesion">
+            <div class="card-head"><h3>Lesion Detection</h3><span class="card-grip"></span></div>
+            <div class="card-body">
+              <svg id="lesionChart" viewBox="0 0 260 150" role="img" aria-label="Lesion detection chart"></svg>
+            </div>
+          </section>
+
+          <!-- XAI ATTENTION -->
+          <section class="card card-xai" id="cardXai">
+            <div class="card-head"><h3>XAI Attention</h3><span class="card-grip"></span></div>
+            <div class="card-body">
+              <div class="xai-pair">
+                <figure><div class="xai-thumb" id="xaiOriginalWrap"><span>Original</span><img id="xaiOriginal" alt="Original fundus" hidden /></div><figcaption>Original</figcaption></figure>
+                <figure><div class="xai-thumb" id="xaiHeatmapWrap"><span>Grad-CAM</span><img id="xaiHeatmap" alt="Grad-CAM heatmap" hidden /></div><figcaption>Grad-CAM Heatmap</figcaption></figure>
+              </div>
+              <p class="xai-caption" id="xaiCaption">Heatmaps will appear after processing</p>
+            </div>
+          </section>
+
+          <!-- SIMULINK TELEMEDICINE -->
+          <section class="card card-sim" id="cardSim">
+            <div class="card-head"><h3>Simulink Telemedicine Simulation</h3><span class="card-grip"></span></div>
+            <div class="card-body sim-body">
+              <svg class="sim-diagram" viewBox="0 0 90 60" aria-hidden="true">
+                <rect x="4" y="24" width="18" height="12" rx="2"/>
+                <rect x="36" y="10" width="18" height="12" rx="2"/>
+                <rect x="36" y="38" width="18" height="12" rx="2"/>
+                <rect x="68" y="24" width="18" height="12" rx="2"/>
+                <path d="M22 30h14M54 16l14 12M54 44l14-12" fill="none" stroke-width="2"/>
+              </svg>
+              <div class="sim-stats">
+                <div><span>Throughput</span><b id="tmThroughput">—</b></div>
+                <div><span>Capacity</span><b id="tmCapacity">—</b></div>
+                <div><span>Current Load</span><b id="tmLoad">—</b></div>
+                <div class="sim-loadbar"><i id="tmLoadBar" style="width:0%"></i></div>
+              </div>
+            </div>
+          </section>
+
+        </aside>
+
+        <!-- PATIENT HISTORY (spans full width along the bottom) -->
+        <section class="card card-history" id="cardHistory">
+          <div class="card-head"><h3>Patient History &amp; Trend: DR Progression</h3><span class="card-grip"></span></div>
+          <div class="card-body">
+            <p class="history-empty" id="historyEmpty">Patient history pending…</p>
+            <svg id="historyChart" viewBox="0 0 520 130" role="img" aria-label="DR progression over time" hidden></svg>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
