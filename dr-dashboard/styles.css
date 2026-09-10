@@ -176,6 +176,9 @@ body {
   transition: border-color .15s, background .15s;
 }
 .dropzone.is-drag { border-color: var(--green); background: #f1f9f2; }
+.eye-upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.eye-dropzone { margin-top: 0; padding: 18px 14px; }
+.field-hint { color: var(--ink-soft); font-size: 13px; }
 .dz-inner { text-align: center; }
 .dz-title { margin: 0 0 12px; font-weight: 700; font-size: 15px; }
 .dz-icon { width: 46px; height: 46px; fill: #aab4be; margin-bottom: 8px; }
@@ -489,3 +492,58 @@ body {
 .expand-btn[hidden],
 #historyChart[hidden],
 #lesionChart[hidden] { display: none !important; }
+
+/* -------------------------- report preview -------------------------- */
+.report-preview { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; }
+.report-toolbar, .report-header, .eye-report-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.report-toolbar { border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+.report-toolbar h2, .report-header h3, .eye-report h3 { margin: 0; color: var(--navy); }
+.report-kicker { margin: 0 0 4px; color: var(--blue); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.report-header { padding: 18px 0; border-bottom: 1px solid var(--line); }
+.performance { min-width: 260px; padding: 10px 12px; background: #edf5fb; border-left: 3px solid var(--blue); color: var(--navy); font-size: 11px; }
+.performance b, .performance span { display: block; }
+.performance span { margin-top: 4px; color: var(--ink-soft); }
+.report-section { padding: 15px 0; border-bottom: 1px solid var(--line); }
+.report-section h3 { margin: 0 0 10px; color: var(--navy); font-size: 15px; }
+.report-section dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0; }
+.report-section dl div { padding: 10px; background: #f5f8fb; }
+.report-section dt { color: var(--ink-soft); font-size: 11px; }
+.report-section dd { margin: 4px 0 0; font-size: 13px; font-weight: 700; }
+.summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.summary-grid div { display: grid; gap: 5px; padding: 12px; border: 1px solid var(--line); border-left: 3px solid #6f42c1; }
+.summary-grid span { color: var(--ink-soft); font-size: 12px; }
+.eye-report { padding: 18px 0; border-bottom: 1px solid var(--line); }
+.eye-report-head h3 { font-size: 17px; }
+.status-badge { border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.status-badge.is-clear { background: #e8f5eb; color: #236b32; }
+.status-badge.is-referable { background: #fdebea; color: #a22d27; }
+.report-meta, .report-muted { color: var(--ink-soft); font-size: 12px; }
+.report-image-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+.report-image-grid figure { margin: 0; border: 1px solid var(--line); background: #f5f8fb; }
+.report-image-grid img { display: block; width: 100%; height: 150px; object-fit: contain; background: #122236; }
+.report-image-grid figcaption { padding: 6px; color: var(--ink-soft); font-size: 11px; }
+.report-missing { display: grid; place-items: center; min-height: 185px; padding: 10px; border: 1px dashed var(--line); color: var(--ink-soft); font-size: 11px; text-align: center; }
+.report-data-grid { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 14px; }
+.report-data-grid h4 { margin: 0 0 8px; color: var(--navy); font-size: 12px; }
+.report-grade { margin: 0; color: #6f42c1; font-size: 24px; font-weight: 800; }
+.prob-row { display: grid; grid-template-columns: 50px 1fr 48px; align-items: center; gap: 6px; margin: 7px 0; font-size: 11px; }
+.prob-row i { height: 8px; background: #edf0f4; overflow: hidden; }
+.prob-row i b { display: block; height: 100%; background: #7b55c7; }
+.prob-row strong { text-align: right; font-size: 10px; }
+.report-lesions { list-style: none; margin: 0; padding: 0; }
+.report-lesions li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #edf0f4; font-size: 12px; }
+.lesion-bars { margin-top: 10px; }
+.lesion-bars > div { display: grid; grid-template-columns: 82px 1fr 24px; align-items: center; gap: 5px; margin: 6px 0; font-size: 10px; }
+.lesion-bars i { height: 7px; background: #f1e9df; overflow: hidden; }
+.lesion-bars i b { display: block; height: 100%; background: #c86b22; }
+.lesion-bars strong { text-align: right; }
+.report-comment-editor { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.report-comment-editor label { display: block; margin-bottom: 7px; color: var(--navy); font-size: 13px; font-weight: 700; }
+.report-comment-editor label span { color: var(--ink-soft); font-weight: 400; }
+.report-comment-editor textarea { width: 100%; resize: vertical; border: 1px solid var(--line); border-radius: 7px; padding: 10px; color: var(--ink); font: inherit; font-size: 13px; }
+
+@media (max-width: 700px) {
+  .eye-upload-grid, .report-section dl, .summary-grid, .report-image-grid, .report-data-grid { grid-template-columns: 1fr; }
+  .report-header, .report-toolbar, .eye-report-head { flex-direction: column; }
+  .performance { width: 100%; min-width: 0; }
+}

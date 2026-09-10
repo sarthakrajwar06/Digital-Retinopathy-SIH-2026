@@ -41,6 +41,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import sys
 import time
 import uuid
@@ -52,7 +53,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, send_file
+from report_service import normalize_report, render_pdf
 
 # --------------------------------------------------------------------------- #
 # Repo layout
@@ -66,9 +68,11 @@ DR_MODEL_DIR = ROOT_DIR / "DiebeticRetinopathy" / "model"
 
 RUNTIME_DIR = SERVER_DIR / "runtime"
 OUTPUT_DIR = RUNTIME_DIR / "outputs"          # per-run generated images
+REPORT_DIR = ROOT_DIR / "reports"
 HISTORY_FILE = RUNTIME_DIR / "history.json"   # patient history store
 RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Module-1 quality code does `from src.config import ...`, so the pipeline root
 # must sit on sys.path and be imported as top-level `src.*`.
@@ -512,7 +516,7 @@ def create_app():
 
         # ---- 2b) Module-2 placeholder: lesion-candidate annotations ------- #
         if ANNOTATOR_READY:
-            ann = annotate_lesion_candidates(passed_bgr)
+            ann = annotate_lesion_candidates(passed_bgr, classification["grade"])
         else:
             ann = {"microaneurysms": 0, "hemorrhages": 0, "exudates": 0,
                    "annotated_bgr": None,
@@ -613,6 +617,18 @@ def create_app():
     @app.get("/outputs/<path:filename>")
     def outputs(filename):
         return send_from_directory(OUTPUT_DIR, filename)
+
+    @app.post("/api/report")
+    def report():
+        payload = request.get_json(silent=True) or {}
+        try:
+            report_data = normalize_report(payload)
+            report_id = re.sub(r"[^A-Za-z0-9._-]+", "_", report_data["report_id"]).strip("._") or "report"
+            pdf_path = REPORT_DIR / f"report_{report_id}.pdf"
+            render_pdf(report_data, pdf_path, SERVER_DIR)
+            return send_file(pdf_path, as_attachment=True, download_name=f"RetinaXplain_{report_id}.pdf", mimetype="application/pdf")
+        except Exception as exc:
+            return jsonify({"error": f"Report generation failed: {type(exc).__name__}: {exc}"}), 500
 
     @app.errorhandler(413)
     def too_large(_e):

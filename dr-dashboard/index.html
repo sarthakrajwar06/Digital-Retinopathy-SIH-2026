@@ -91,32 +91,46 @@
               </div>
 
               <div class="field field-inline">
-                <span class="field-label">Select eye</span>
-                <label class="radio"><input type="radio" name="eye" value="Left" checked /> <span>Left</span></label>
-                <label class="radio"><input type="radio" name="eye" value="Right" /> <span>Right</span></label>
+                <span class="field-label">Upload eye images</span>
+                <span class="field-hint">Upload one or both eyes</span>
               </div>
 
-              <div class="dropzone" id="dropZone" tabindex="0" role="button"
-                   aria-label="Upload a retinal fundus image. Drop a file or press Enter to browse.">
+              <div class="eye-upload-grid">
+              <div class="dropzone eye-dropzone" id="leftDropZone" tabindex="0" role="button"
+                   aria-label="Upload a left-eye retinal fundus image.">
                 <div class="dz-inner" id="dzInner">
-                  <p class="dz-title">Image upload</p>
+                  <p class="dz-title">Left Eye</p>
                   <svg class="dz-icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 3l4 4h-3v6h-2V7H8l4-4Zm-7 9h2v6h10v-6h2v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7Z"/>
                   </svg>
-                  <p class="dz-hint">Drop retinal fundus image or click <strong>Browse</strong></p>
+                  <p class="dz-hint">Drop image or click <strong>Browse</strong></p>
                   <div class="dz-actions">
-                    <button type="button" class="btn btn-light" id="browseBtn">Browse file…</button>
-                    <button type="button" class="btn btn-light" id="uploadBtn">Upload image</button>
+                    <button type="button" class="btn btn-light" id="leftBrowseBtn">Browse file…</button>
                   </div>
                 </div>
-                <div class="dz-preview" id="dzPreview" hidden>
-                  <img id="previewImg" alt="Selected fundus image preview" />
+                <div class="dz-preview" id="leftPreview" hidden>
+                  <img id="leftPreviewImg" alt="Selected left-eye fundus image preview" />
                   <div class="dz-preview-meta">
-                    <span id="previewName">image.jpg</span>
-                    <button type="button" class="link-btn" id="clearImgBtn">Remove</button>
+                    <span id="leftPreviewName">image.jpg</span>
+                    <button type="button" class="link-btn" id="leftClearBtn">Remove</button>
                   </div>
                 </div>
-                <input type="file" id="fileInput" accept="image/*" hidden />
+                <input type="file" id="leftFileInput" accept="image/*" hidden />
+              </div>
+              <div class="dropzone eye-dropzone" id="rightDropZone" tabindex="0" role="button"
+                   aria-label="Upload a right-eye retinal fundus image.">
+                <div class="dz-inner" id="rightDzInner">
+                  <p class="dz-title">Right Eye</p>
+                  <svg class="dz-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 4h-3v6h-2V7H8l4-4Zm-7 9h2v6h10v-6h2v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7Z"/></svg>
+                  <p class="dz-hint">Drop image or click <strong>Browse</strong></p>
+                  <div class="dz-actions"><button type="button" class="btn btn-light" id="rightBrowseBtn">Browse file…</button></div>
+                </div>
+                <div class="dz-preview" id="rightPreview" hidden>
+                  <img id="rightPreviewImg" alt="Selected right-eye fundus image preview" />
+                  <div class="dz-preview-meta"><span id="rightPreviewName">image.jpg</span><button type="button" class="link-btn" id="rightClearBtn">Remove</button></div>
+                </div>
+                <input type="file" id="rightFileInput" accept="image/*" hidden />
+              </div>
               </div>
 
               <p class="form-error" id="formError" role="alert" hidden></p>
@@ -145,6 +159,19 @@
               <span id="gateBannerText"></span>
             </div>
           </div>
+
+          <section class="report-preview" id="reportPreview" hidden aria-labelledby="reportTitle">
+            <div class="report-toolbar">
+              <div><p class="report-kicker">Clinical screening document</p><h2 id="reportTitle">RetinaXplain Report Preview</h2></div>
+              <button type="button" class="btn btn-primary" id="downloadReportBtn">Download Report</button>
+            </div>
+            <div id="reportContent"></div>
+            <div class="report-comment-editor">
+              <label for="doctorComment">Doctor / Pathologist Comment <span>(optional; included in download only)</span></label>
+              <textarea id="doctorComment" rows="4" placeholder="Enter a human clinical comment for the downloaded report"></textarea>
+            </div>
+            <p class="form-error" id="reportError" role="alert" hidden></p>
+          </section>
 
           <!-- ---- STATUS BAR ---- -->
           <div class="statusbar" id="statusBar" aria-live="polite">
