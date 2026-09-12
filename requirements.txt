@@ -3,7 +3,6 @@
 # PyTorch
 torch==2.7.0
 torchvision==0.22.0
-torchaudio==2.7.0
 
 # Scientific / data stack
 numpy==2.2.6
@@ -15,7 +14,7 @@ openpyxl==3.1.5
 tqdm==4.67.1
 
 # Image processing / serving
-opencv-python-headless>=4.8
+opencv-python-headless==4.11.0.86
 pillow>=10.0
 flask>=3.0
 reportlab>=4.0
