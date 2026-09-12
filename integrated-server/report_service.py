@@ -26,12 +26,21 @@ def normalize_report(payload: dict) -> dict:
 
 
 def _image_path(root_dir: Path, url: str | None) -> Path | None:
-    if not url or not isinstance(url, str) or not url.startswith("/outputs/"):
+    if not url or not isinstance(url, str):
         return None
-    relative_url = url.removeprefix("/outputs/")
-    candidate = (root_dir / "runtime" / "outputs" / relative_url).resolve()
+
+    outputs_root = (root_dir / "runtime" / "outputs").resolve()
+    if url.startswith("/outputs/"):
+        candidate = (outputs_root / url.removeprefix("/outputs/")).resolve()
+        allowed_roots = (outputs_root,)
+    else:
+        # Streamlit stores decoded data URLs in this private report directory.
+        candidate = Path(url).resolve()
+        allowed_roots = ((root_dir.parent / "reports" / "streamlit_bridge").resolve(),)
+
     try:
-        candidate.relative_to((root_dir / "runtime" / "outputs").resolve())
+        if not any(candidate.is_relative_to(allowed_root) for allowed_root in allowed_roots):
+            return None
     except ValueError:
         return None
     return candidate if candidate.is_file() else None
