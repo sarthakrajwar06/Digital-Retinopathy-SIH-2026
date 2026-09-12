@@ -38,7 +38,7 @@ st.markdown(
             [data-testid="stAppViewContainer"],
             [data-testid="stMain"],
             [data-testid="stMainBlockContainer"] {
-                background: transparent !important;
+                background: #f2a46f !important;
             }
             [data-testid="stHeader"],
             [data-testid="stToolbar"],
@@ -60,6 +60,12 @@ st.markdown(
                 max-width: none !important;
                 margin: 0 !important;
                 padding: 0 !important;
+            }
+            html, body, .stApp,
+            [data-testid="stAppViewContainer"] > .main,
+            [data-testid="stMain"] > div,
+            .main .block-container {
+                background: #f2a46f !important;
             }
             [data-testid="stVerticalBlock"] {
                 gap: 0 !important;
