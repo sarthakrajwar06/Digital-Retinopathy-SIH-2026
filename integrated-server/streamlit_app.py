@@ -32,36 +32,36 @@ st.set_page_config(
 )
 
 st.markdown(
-                """
-                <style>
-                        html, body, .stApp,
-                        [data-testid="stAppViewContainer"],
-                        [data-testid="stMain"],
-                        [data-testid="stMainBlockContainer"] {
-                                background: transparent !important;
-                        }
-                        [data-testid="stHeader"],
-                        [data-testid="stToolbar"],
-                        [data-testid="stDecoration"],
-                        [data-testid="stSidebar"] {
-                                display: none !important;
-                        }
-                        [data-testid="stMainBlockContainer"] {
-                                max-width: none !important;
-                                padding: 0 !important;
-                        }
-                        [data-testid="stVerticalBlock"] {
-                                gap: 0 !important;
-                        }
-                        iframe {
-                                display: block !important;
-                                width: 100vw !important;
-                                max-width: 100vw !important;
-                                border: 0 !important;
-                        }
-                </style>
-                """,
-                unsafe_allow_html=True,
+        """
+        <style>
+            html, body, .stApp,
+            [data-testid="stAppViewContainer"],
+            [data-testid="stMain"],
+            [data-testid="stMainBlockContainer"] {
+                background: transparent !important;
+            }
+            [data-testid="stHeader"],
+            [data-testid="stToolbar"],
+            [data-testid="stDecoration"],
+            [data-testid="stSidebar"] {
+                display: none !important;
+            }
+            [data-testid="stMainBlockContainer"] {
+                max-width: none !important;
+                padding: 0 !important;
+            }
+            [data-testid="stVerticalBlock"] {
+                gap: 0 !important;
+            }
+            iframe {
+                display: block !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
+                border: 0 !important;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
 )
 
 # ---------------------------------------------------------------------------
@@ -233,7 +233,7 @@ result = component(
     data={"bridge_response": st.session_state.bridge_response},
     on_bridge_request_change=lambda: None,
     width="stretch",
-    height=6800,
+    height=3800,
 )
 
 request = getattr(result, "bridge_request", None)
