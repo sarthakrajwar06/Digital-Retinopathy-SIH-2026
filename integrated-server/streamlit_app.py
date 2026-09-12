@@ -38,7 +38,7 @@ st.markdown(
             [data-testid="stAppViewContainer"],
             [data-testid="stMain"],
             [data-testid="stMainBlockContainer"] {
-                background: #f2a46f !important;
+                background: linear-gradient(90deg, #d9683e 0%, #ee9661 48%, #f6b17e 100%) !important;
             }
             [data-testid="stHeader"],
             [data-testid="stToolbar"],
@@ -65,7 +65,7 @@ st.markdown(
             [data-testid="stAppViewContainer"] > .main,
             [data-testid="stMain"] > div,
             .main .block-container {
-                background: #f2a46f !important;
+                background: linear-gradient(90deg, #d9683e 0%, #ee9661 48%, #f6b17e 100%) !important;
             }
             [data-testid="stVerticalBlock"] {
                 gap: 0 !important;
