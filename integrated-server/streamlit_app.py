@@ -134,11 +134,11 @@ def save_data_url(value: str | None, destination: Path) -> str | None:
         return value
 
 
-def prepare_report_payload(payload: dict, report_dir: Path) -> dict:
-    """Restore data URLs to local files because the existing PDF renderer expects paths."""
+def prepare_report_payload(payload: dict, output_root: Path) -> dict:
+    """Restore data URLs to runtime output URLs for the existing PDF renderer."""
     out = json.loads(json.dumps(payload))
     report_id = re.sub(r"[^A-Za-z0-9._-]+", "_", str(out.get("report_id", "report")))
-    base = report_dir / report_id
+    base = output_root / "streamlit_reports" / report_id
     for idx, eye in enumerate(out.get("eyes") or []):
         prefix = base / f"eye_{idx+1}"
         mapping = {
@@ -148,7 +148,9 @@ def prepare_report_payload(payload: dict, report_dir: Path) -> dict:
         }
         for key, filename in mapping.items():
             if key in eye:
-                eye[key] = save_data_url(eye.get(key), prefix / filename)
+                saved = save_data_url(eye.get(key), prefix / filename)
+                if saved != eye.get(key) and Path(saved).is_file():
+                    eye[key] = f"/outputs/streamlit_reports/{report_id}/eye_{idx+1}/{filename}"
     return out
 
 
@@ -173,7 +175,10 @@ def handle_bridge_request(request: dict) -> dict:
             return {"id": request_id, "status": response.status_code, "body": body}
 
         if kind == "report":
-            payload = prepare_report_payload(request.get("payload") or {}, Path(server_module.REPORT_DIR) / "streamlit_bridge")
+            payload = prepare_report_payload(
+                request.get("payload") or {},
+                Path(server_module.OUTPUT_DIR),
+            )
             response = client.post("/api/report", json=payload)
             if response.status_code >= 300:
                 body = response.get_json(silent=True) or {"error": response.get_data(as_text=True)}
