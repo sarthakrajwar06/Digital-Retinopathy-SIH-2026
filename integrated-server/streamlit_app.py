@@ -31,6 +31,39 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+st.markdown(
+                """
+                <style>
+                        html, body, .stApp,
+                        [data-testid="stAppViewContainer"],
+                        [data-testid="stMain"],
+                        [data-testid="stMainBlockContainer"] {
+                                background: transparent !important;
+                        }
+                        [data-testid="stHeader"],
+                        [data-testid="stToolbar"],
+                        [data-testid="stDecoration"],
+                        [data-testid="stSidebar"] {
+                                display: none !important;
+                        }
+                        [data-testid="stMainBlockContainer"] {
+                                max-width: none !important;
+                                padding: 0 !important;
+                        }
+                        [data-testid="stVerticalBlock"] {
+                                gap: 0 !important;
+                        }
+                        iframe {
+                                display: block !important;
+                                width: 100vw !important;
+                                max-width: 100vw !important;
+                                border: 0 !important;
+                        }
+                </style>
+                """,
+                unsafe_allow_html=True,
+)
+
 # ---------------------------------------------------------------------------
 # Existing backend — no app.run(), no port 8000.
 # ---------------------------------------------------------------------------
