@@ -1,11 +1,7 @@
-# Combined dependencies for the Digital Retinopathy project
 streamlit==1.63.0
-
-# PyTorch
 torch==2.7.0
 torchvision==0.22.0
-
-# Scientific / data stack
+torchaudio==2.7.0
 numpy==2.2.6
 pandas==2.3.1
 matplotlib==3.10.5
@@ -13,8 +9,6 @@ seaborn==0.13.2
 scikit-learn==1.7.1
 openpyxl==3.1.5
 tqdm==4.67.1
-
-# Image processing / serving
 opencv-python-headless==4.11.0.86
 pillow>=10.0
 flask>=3.0
