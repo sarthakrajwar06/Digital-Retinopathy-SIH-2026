@@ -50,6 +50,12 @@ This matters for report downloads because the PDF renderer requires the
 `reportlab` package installed in that same environment. Generated PDFs are
 saved to the repository-level `reports\` directory.
 
+### Streamlit Cloud deployment
+
+The hosted app uses `streamlit_app.py` rather than opening Flask on a public
+port. Streamlit Components v2 embeds the original RetinaXplain dashboard and
+forwards `/api/analyze` and `/api/report` to the Flask test client.
+
 Open http://localhost:8000 — the dashboard is served from `dr-dashboard/`, and
 its "Start analysis" button now calls the real backend (`POST /api/analyze`).
 
@@ -60,11 +66,12 @@ its "Start analysis" button now calls the real backend (`POST /api/analyze`).
 | GET    | `/`             | DR screening dashboard (frontend)                              |
 | GET    | `/api/health`   | Module status (quality module / DR model loaded?)              |
 | POST   | `/api/analyze`  | Upload `image` + `patient_id` + `eye` → full screening result  |
+| POST   | `/api/report`   | Generate and download a PDF report with analysis images       |
 | GET    | `/outputs/...`  | Generated result / heatmap / original images (per run)         |
 
 ### `/api/analyze` response
 
-Exactly the contract documented at the top of `dr-dashboard/app.js`, plus one
+Exactly the contract consumed by `dr-dashboard/script.js`, plus one
 extra block, `quality_gate`, with the Module-1 verdict
 (`final_status`, `action`, `reason`, `recapture_required`, …) that the
 dashboard uses for its quality banner.
@@ -93,7 +100,8 @@ integrated-server/
 ├── README.md
 └── runtime/                  created at runtime (gitignored)
     ├── history.json          per-patient screening records
-    └── outputs/<run_id>/     original.png · heatmap.png · result.png
+    ├── outputs/<run_id>/     original.png · heatmap.png · result.png
+    └── outputs/streamlit_reports/<report_id>/  hosted report images
 ```
 
 ## Smoke test

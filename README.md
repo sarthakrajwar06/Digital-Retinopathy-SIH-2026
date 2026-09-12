@@ -8,12 +8,12 @@ that connects them into a single web app.
 
 | Folder | Contents | Status |
 | ------ | -------- | ------ |
-| `dr-dashboard/` | Frontend (plain HTML/CSS/JS) — upload form, DR results, quality pills, XAI thumbs, history chart | UI done; **now wired to the real backend** |
+| `dr-dashboard/` | RetinaXplain frontend (plain HTML/CSS/JS) — upload form, DR results, quality pills, XAI views, and reports | UI done; wired to the real backend |
 | `Image-quality-assessment-pipeline/` | **Module 1** — deterministic fundus image-quality assessment + enhancement (7 dimensions, CRITICAL / BORDERLINE / NON-CRITICAL) | standalone ✅ |
 | `DiebeticRetinopathy/` | **Module 3** — EfficientNet-B0 DR severity classifier (grades 0–4) + trained checkpoint + `dr_predictor.py` | standalone ✅ |
-| `integrated-server/` | **NEW — integration layer** (Flask): quality gate → DR classification → Grad-CAM XAI → history; serves the dashboard too | connects the three folders |
+| `integrated-server/` | Integration layer (Flask + Streamlit host): quality gate → DR classification → Grad-CAM XAI → history and PDF reports | local server and hosted app |
 
-## Quick start
+## Quick start: local Flask app
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
@@ -27,6 +27,20 @@ Open the dashboard, upload a fundus photo → you get:
 Module-1 quality verdict (+ enhancement when the photo is borderline) →
 real DR grade/confidence from the trained EfficientNet-B0 checkpoint →
 Grad-CAM heatmap images.
+
+## Hosted Streamlit app
+
+The deployed entrypoint is `integrated-server/streamlit_app.py`. It hosts the
+original `dr-dashboard/` UI full-width and bridges the existing Flask analysis
+and report routes through a Flask test client.
+
+- Main file: `integrated-server/streamlit_app.py`
+- Branch: `main`
+- Dependencies: `requirements.txt`
+- Browser title: `RetinaXplain`
+
+Hosted report downloads decode image data into the runtime output directory so
+the PDF can include the fundus image, Grad-CAM heatmap, and lesion annotation.
 
 ## The end-to-end flow (what the integration does)
 
@@ -42,11 +56,10 @@ upload ─► Module 1 quality gate (full resolution)
 
 ## Known gaps (not implemented anywhere yet)
 
-1. **Module 2 — Lesion detection / segmentation** (microaneurysms,
-   hemorrhages, exudates). No code or weights exist in this repo. The
-   dashboard's "Lesion Detection" card therefore shows a placeholder note,
-   and `/api/analyze` returns `lesions.* = null`. Wire it in
-   `integrated-server/server.py` when ready.
+1. **Module 2 — Lesion detection / segmentation** is currently a provisional
+   classical-CV candidate detector in `integrated-server/lesion_annotator.py`.
+   Its counts and boxes are screening aids, not clinical diagnoses; replace it
+   with a trained segmenter when available.
 2. **Training dataset** (APTOS/IDRiD images + `labels.csv`) is not in the repo
    (large, licensed). The Module-3 notebook and Module-1 scripts reference a
    local `dataset/` folder you must re-supply to retrain or re-run reports.
@@ -63,4 +76,5 @@ upload ─► Module 1 quality gate (full resolution)
 
 `sample_*.png` are synthetic placeholders (see `dr-dashboard/tools/`) and are
 no longer used once the backend is running — real outputs come from
-`/outputs/<run_id>/`.
+`/outputs/<run_id>/` and hosted report copies from
+`/outputs/streamlit_reports/<report_id>/`.
