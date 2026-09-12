@@ -53,7 +53,9 @@ st.markdown(
             [data-testid="stAppViewContainer"] > .main,
             [data-testid="stAppViewContainer"] section.main,
             [data-testid="stMain"] > div,
-            .main .block-container {
+            section.main,
+            .main .block-container,
+            [data-testid="stElementContainer"] {
                 width: 100% !important;
                 max-width: none !important;
                 margin: 0 !important;
@@ -216,7 +218,7 @@ def load_frontend():
     css = re.sub(r"(^|\n)\s*body\s*\{", r"\1.retinaxplain-root{", css, count=1)
     css = re.sub(r"(^|\n)\s*html\s*\{", r"\1.retinaxplain-root{", css, count=1)
     css = "@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap');\n" + css
-    css += "\n.retinaxplain-root{width:100%;min-height:100%;position:relative;}\n"
+    css += "\nhtml,body{margin:0!important;padding:0!important;background:transparent!important;}\n.retinaxplain-root{width:100%;min-height:100%;margin:0!important;position:relative;}\n"
 
     js = js.replace("document.body.classList.add('modal-open')", "root.classList.add('modal-open')")
     js = js.replace("document.body.classList.remove('modal-open')", "root.classList.remove('modal-open')")
