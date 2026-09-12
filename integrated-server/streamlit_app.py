@@ -50,13 +50,22 @@ st.markdown(
                 max-width: none !important;
                 padding: 0 !important;
             }
+            [data-testid="stAppViewContainer"] > .main,
+            [data-testid="stAppViewContainer"] section.main,
+            [data-testid="stMain"] > div,
+            .main .block-container {
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
             [data-testid="stVerticalBlock"] {
                 gap: 0 !important;
             }
             iframe {
                 display: block !important;
-                width: 100vw !important;
-                max-width: 100vw !important;
+                width: 100% !important;
+                max-width: none !important;
                 border: 0 !important;
             }
         </style>
