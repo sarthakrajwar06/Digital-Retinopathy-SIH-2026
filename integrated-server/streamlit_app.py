@@ -25,7 +25,7 @@ if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
 st.set_page_config(
-    page_title="RetinaXplain — Explainable Retinal Screening",
+    page_title="RetinaXplain",
     page_icon="👁️",
     layout="wide",
     initial_sidebar_state="collapsed",
