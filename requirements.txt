@@ -1,4 +1,5 @@
 # Combined dependencies for the Digital Retinopathy project
+streamlit==1.63.0
 
 # PyTorch
 torch==2.7.0
