@@ -1,0 +1,22 @@
+{
+  "name": "apl-live-auction",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline-first local-network auction management for Auction Premier League (APL).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.4"
+  }
+}

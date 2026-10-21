@@ -1,0 +1,13 @@
+id,name,role,basePrice,photo,secondaryRole,stats,category
+arjun-mehta,Arjun Mehta,Batter,200000,,Right-hand bat,Consistent opener,Platinum
+kabir-shah,Kabir Shah,Bowler,150000,,Right-arm fast,Death overs,Platinum
+rohan-nair,Rohan Nair,All-rounder,250000,,Right-hand bat / right-arm medium,Powerplay impact,Platinum
+dev-malhotra,Dev Malhotra,Wicketkeeper,200000,,Right-hand bat,Safe gloves,Platinum
+ishaan-kapoor,Ishaan Kapoor,Batter,100000,,Left-hand bat,Middle order,Gold
+manav-bose,Manav Bose,Bowler,100000,,Left-arm orthodox,Spin control,Gold
+samar-rao,Samar Rao,All-rounder,150000,,Right-hand bat / leg-spin,Finisher,Gold
+vihaan-das,Vihaan Das,Batter,75000,,Right-hand bat,Opening batter,Silver
+ayaan-verma,Ayaan Verma,Bowler,75000,,Right-arm medium,New ball,Silver
+neel-joshi,Neel Joshi,Wicketkeeper,100000,,Left-hand bat,Quick hands,Silver
+pranav-sen,Pranav Sen,All-rounder,125000,,Left-arm fast,Seam all-rounder,Silver
+aditya-rana,Aditya Rana,Batter,50000,,Right-hand bat,Flexible order,Emerging
