@@ -1,0 +1,9 @@
+node_modules/
+data/*.json
+data/*.tmp
+data/backups/
+data/exports/
+public/uploads/*
+!public/uploads/.gitkeep
+
+data/server.pid

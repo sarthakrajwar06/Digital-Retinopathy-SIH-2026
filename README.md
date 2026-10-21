@@ -1,5 +1,7 @@
 # SIH 2026 — Explainable AI for Diabetic Retinopathy Screening (PS 26038)
 
+> **APL Auction Website:** A separate offline-first live auction system is available in [`apl-auction/`](apl-auction/README.md). It runs on a local Node.js server with JSON persistence and Socket.IO synchronization; it does not use the retinopathy screening services.
+
 Monorepo for the Smart India Hackathon 2026 problem statement **26038**.
 It contains the standalone module work **plus** the new integration server
 that connects them into a single web app.

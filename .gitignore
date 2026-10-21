@@ -8,8 +8,19 @@ venv/
 # Integration server runtime data (generated)
 integrated-server/runtime/
 
+# Auction application runtime data and dependencies
+apl-auction/node_modules/
+apl-auction/data/*.json
+apl-auction/data/*.tmp
+apl-auction/data/backups/
+apl-auction/data/exports/
+apl-auction/public/uploads/*
+!apl-auction/public/uploads/.gitkeep
+
 # OS / editors
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
+
+apl-auction/data/server.pid
